@@ -12,6 +12,10 @@ import Grid from '@mui/material/Grid';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
+
+
+import { useAuth } from '../contexts/AuthContext';
 
 function Copyright(props) {
   return (
@@ -29,14 +33,28 @@ function Copyright(props) {
 const theme = createTheme();
 
 export default function SignInSide() {
-  const handleSubmit = (event) => {
+
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     console.log({
       email: data.get('email'),
       password: data.get('password'),
     });
+
+    try {
+      await auth.signInWithEmail(data.get('email'), data.get('password'),);
+      navigate('/');
+    } catch (error) {
+      
+    }
+
   };
+
 
   return (
     <ThemeProvider theme={theme}>

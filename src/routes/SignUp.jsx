@@ -12,6 +12,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate  } from 'react-router-dom';
 
 function Copyright(props) {
   return (
@@ -29,13 +31,27 @@ function Copyright(props) {
 const theme = createTheme();
 
 export default function SignUp() {
-  const handleSubmit = (event) => {
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     console.log({
       email: data.get('email'),
       password: data.get('password'),
+      firstName: data.get('firstName'),
+      lastName: data.get('lastName'),
+
     });
+    try {
+      const user = await auth.signup(data.get('email'), data.get('password'));
+      const res = await auth.updateUserProfile({ displayName: data.get('lastName') + " " + data.get('firstName')});
+      navigate('/');
+    } catch (error) {
+      console.log(error)
+    
+    }
   };
 
   return (
