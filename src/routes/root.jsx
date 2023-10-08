@@ -20,25 +20,82 @@ export default function Root() {
   return (
     <>
       <div id="sidebar">
-        <h1>React Router Contacts</h1>
+        {/* <h1>React Router Contacts lk;l;;l;l</h1> */}
 
         <NavLink
-                    to={`contacts/`}
-                    className={({ isActive, isPending }) =>
-                      isActive
-                        ? "active"
-                        : isPending
-                        ? "pending"
-                        : ""
-                    }
-                  >
-                    Link to contacts
+          to={`tournament/`}
+          className={({ isActive, isPending }) =>
+            isActive
+              ? "active"
+              : isPending
+              ? "pending"
+              : ""
+          }
+        >
+          <h2>
+            Турнір
+          </h2>
+        </NavLink>
+        <NavLink
+          to={`tournamentSettings/`}
+          className={({ isActive, isPending }) =>
+            isActive
+              ? "active"
+              : isPending
+              ? "pending"
+              : ""
+          }
+        >
+          <h2>
+            Налаштування Турніру
+          </h2>
+        </NavLink>
+        <NavLink
+          to={`categories/`}
+          className={({ isActive, isPending }) =>
+            isActive
+              ? "active"
+              : isPending
+              ? "pending"
+              : ""
+          }
+        >
+          <h2>
+            Категорії
+          </h2>
+        </NavLink>
+        <NavLink
+          to={`competitors/`}
+          className={({ isActive, isPending }) =>
+            isActive
+              ? "active"
+              : isPending
+              ? "pending"
+              : ""
+          }
+        >
+          <h2>
+            Учасники
+          </h2>
+        </NavLink>
+        <NavLink
+          to={`results/`}
+          className={({ isActive, isPending }) =>
+            isActive
+              ? "active"
+              : isPending
+              ? "pending"
+              : ""
+          }
+        >
+          <h2>
+            Результати
+          </h2>
         </NavLink>
       </div>
-      <div style={{ border: "2px dotted", flexDirection: "column", flex: 1, }}>
-        <AppBar />
+      <div style={{  flex: 1,  }}>
+        {/* <AppBar /> */}
         <Outlet />
-        
       </div>
 
     </>

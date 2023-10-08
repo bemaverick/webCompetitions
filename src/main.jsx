@@ -24,7 +24,7 @@ import ErrorPage from './error-page'
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <InitialPage />,
+    element: <SignUp />,
   },
   {
     path: "/signup",
@@ -70,7 +70,7 @@ const router1 = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <CssBaseline />
-    {/* <RouterProvider router={router} /> */}
+    {/* <RouterProvider router={router1} /> */}
     <App />
   </React.StrictMode>,
 )
