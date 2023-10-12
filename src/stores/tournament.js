@@ -37,6 +37,7 @@ const FAKE_competitorsList = [
 
 
 //  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '110_man_right', id: '20', stats: { 0: { result: 'win' }}},
+//result can be win|lose|idle
 class TournamentStore {
   constructor() {
     makeAutoObservable(this);
@@ -54,7 +55,7 @@ class TournamentStore {
   tables = {
     0: {
       category: '',
-      state: 'idle',
+      state: 'idle', //idle, started, or finished
       rounds: {
         0: {
           groupA: [],
@@ -70,10 +71,6 @@ class TournamentStore {
         0: {
           groupA: [],
           groupB: []
-        },
-        1: {
-          groupA: [],
-          groupB: []
         }
       },
       selectedRound: 0
@@ -82,10 +79,13 @@ class TournamentStore {
       category: '',
       state: 'idle',
       rounds: {
-        0: []
+        0: {
+          groupA: [],
+          groupB: []
+        }
       },
       selectedRound: 0
-    }
+    },
   }
 
   weightCategories = [];
@@ -95,6 +95,10 @@ class TournamentStore {
   tournamentCategories = FAKE_tournamentCategories;
 
   competitorsList = FAKE_competitorsList;
+
+  results = {
+
+  }
 
   setTournamentName = (name) => this.tournamentName = name;
 
@@ -106,7 +110,8 @@ class TournamentStore {
       this.tables[i] = {
         state: 'idle',
         category: '',
-        competitorTable: []
+        rounds: { 0: { groupA: [], groupB: [] }},
+        selectedRound: 0,
       } 
     }
     console.log(toJS(this.tables));
@@ -167,91 +172,85 @@ class TournamentStore {
     const nextRoundIndex = +this.currentRoundIndex + 1; //fix this
     const newRoundGroupA = [];
     let newRoundGroupB = [];
+    const finishedGroup = [];
 
-
+ 
     this.currentGroupA.map((competitor, index) => {
       const isLastPairIncomplete = (index === this.currentGroupA.length - 1) && this.currentGroupA.length % 2 === 1;
       const isCompetitorWinner = competitor.stats[this.currentRoundIndex].result === 'win';
       const isCompetitorLoser = competitor.stats[this.currentRoundIndex].result === 'lose';
+      //IN THE FINAL IN GROUP A CAN BE A COMPETITOR WITH LOSES, WE NEED TO COUNT LOSEESl
       const numberOfLoses = Object.values(competitor.stats).reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0);
-      // this for final and superfinal when competitor from groupB moved to groupA
       console.log(competitor.lastName, numberOfLoses, JSON.stringify(competitor.stats))
 
-
+      // 2 LOSES IN A => COMPETITOR FINISHING
       if (numberOfLoses === 2) {
+        finishedGroup.unshift( _.cloneDeep(competitor));
         return;
       }
 
+       // NO PAIR, MOVES TO TOP OF HIS GROUP IN NEXT ROUND
       if (isLastPairIncomplete) {
-        newRoundGroupA.unshift({
-          ...competitor,
-          //stats: { ...competitor.stats, [nextRoundIndex]: { result: 'idle' }}
-          stats
-        });
+        const updateCompetitor = _.cloneDeep(competitor);
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        newRoundGroupA.unshift(updateCompetitor);
         return;
       }
       if (isCompetitorWinner) {
-        newRoundGroupA.push({
-          ...competitor,
-          stats: { ...competitor.stats, [nextRoundIndex]: { result: 'idle' }}
-        })
+        const updateCompetitor = _.cloneDeep(competitor);
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        newRoundGroupA.push(updateCompetitor)
       }
+
+      // COMPETITOR MOVES TO GROUP B
       if (isCompetitorLoser) {
-        newRoundGroupB.push({
-          ...competitor,
-          stats: { ...competitor.stats, [nextRoundIndex]: { result: 'idle' }}
-        })
+        const updateCompetitor = _.cloneDeep(competitor);
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        newRoundGroupB.push(updateCompetitor)
       }
     });
 
     this.currentGroupB.map((competitor, index) => { 
-      console.log('inside group B')
       const isLastPairIncomplete = (index === this.currentGroupB.length - 1) && this.currentGroupB.length % 2 === 1;
       const isCompetitorWinner = competitor.stats[this.currentRoundIndex].result === 'win';
-      //const isCompetitorLoser = competitor.stats[this.currentRoundIndex].result === 'lose';
+      const isCompetitorLoser = competitor.stats[this.currentRoundIndex].result === 'lose';
+
+      // NO PAIR, MOVES TO TOP OF HIS GROUP IN NEXT ROUND
       if (isLastPairIncomplete) {
-        newRoundGroupB.unshift({
-          ...competitor,
-          stats: { ...competitor.stats, [nextRoundIndex]: { result: 'idle' }}
-        });
+        const updateCompetitor = _.cloneDeep(competitor);
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        newRoundGroupB.unshift(updateCompetitor);
         return;
       }
       if (isCompetitorWinner) {
-        newRoundGroupB.push({
-          ...competitor,
-          stats: { ...competitor.stats, [nextRoundIndex]: { result: 'idle' }}
-        })
+        const updateCompetitor = _.cloneDeep(competitor);
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        newRoundGroupB.push(updateCompetitor)
       }
-      // if (isCompetitorWinner) {
-      //   newRoundGroupB.push({
-      //     ...competitor,
-      //     stats: { ...competitor.stats, [nextRoundIndex]: { result: 'idle' }}
-      //   })
-      // }
+      // COMPETITOR FINISHING AND MOVED TO RESULT
+      if (isCompetitorLoser) {
+        finishedGroup.push(_.cloneDeep(competitor));
+      }
     });
 
-    if (newRoundGroupB.length === 1) { //this means competitor should go to final or its last battle
-      console.log('group B with one competitor')
+    //COMPETITOR FROM B MOVES TO FINAL
+    if (newRoundGroupB.length === 1) {
       newRoundGroupA.push(_.cloneDeep(newRoundGroupB[0]));
       newRoundGroupB = [];
-      // let numberOfLoses = Object.values(newRoundGroupB[0].stats).reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0);
-      // console.log('numberOfLoses', numberOfLoses, JSON.stringify(toJS(newRoundGroupB[0])))
-      // if (numberOfLoses === 1) {
-      //   newRoundGroupA.push(newRoundGroupB[0]);
-      //   newRoundGroupB = [];
-      // }
-      // } else {
-      //   newRoundGroupA.push(newRoundGroupB[0]);
-      //   newRoundGroupB.shift();
-      // }
     } 
 
+    //END OF CATEGORY
+    if (newRoundGroupA.length === 1 && newRoundGroupB.length === 0) {
+      this.setTableStatus(this.currentTableIndex, 'finished');
+      finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));
+    }
 
      console.log('nextRound', nextRoundIndex)
      console.log('groupA', toJS(newRoundGroupA))
      console.log('groupB',  toJS(newRoundGroupB))
 
-
+    
+     this.logRoundResults(finishedGroup);
      this.currentTable.rounds[nextRoundIndex] = { groupA: newRoundGroupA, groupB: newRoundGroupB };
      this.currentTable.selectedRound = nextRoundIndex;
   }
@@ -259,34 +258,32 @@ class TournamentStore {
   markWinner = (competitorId, group) => {
     let currentGroup;
     if (group === 'groupA') {
-      currentGroup = this.currentGroupA
+      currentGroup = this.currentGroupA;
     }
     if (group === 'groupB') {
-      currentGroup = this.currentGroupB
+      currentGroup = this.currentGroupB;
     }
-    // console.log('mark', toJS(currentGroup))
     const selectedCompetitorIndex = currentGroup.findIndex(competitor => competitor.id === competitorId);
-    // console.log('currentGroup[selectedCompetitorIndex]', selectedCompetitorIndex);
     //index of another competitor in pair
     const pairedCompetitorIndex = selectedCompetitorIndex % 2 == 0
       ? selectedCompetitorIndex + 1
       : selectedCompetitorIndex - 1;
     
-    currentGroup[selectedCompetitorIndex].stats = {
-      ...currentGroup[selectedCompetitorIndex].stats,
-      [this.currentRoundIndex]: {
-        result: "win"
-      }
-    };
+    currentGroup[selectedCompetitorIndex].stats[this.currentRoundIndex].result = 'win';
+
     if (pairedCompetitorIndex < currentGroup.length) {
-      currentGroup[pairedCompetitorIndex].stats = {
-        ...currentGroup[selectedCompetitorIndex].stats,
-        [this.currentRoundIndex]: {
-          result: "lose"
-        }
-      };
+      currentGroup[pairedCompetitorIndex].stats[this.currentRoundIndex].result = 'lose';
     }
-    //console.log('currentGroup[selectedCompetitorIndex]', selectedCompetitorIndex);
+  }
+  
+
+  logRoundResults = (finishedGroup) => {
+    if (!this.results[this.currentTable.category]) {
+      this.results[this.currentTable.category] = [];
+    } 
+    this.results[this.currentTable.category] = [...finishedGroup, ...this.results[this.currentTable.category]]
+
+    console.log(toJS(this.results))
   }
 
   get

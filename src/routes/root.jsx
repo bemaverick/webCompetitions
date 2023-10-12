@@ -1,6 +1,8 @@
 import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "react-router-dom";
 import { getContacts, createContact } from "../contacts";
 import AppBar from "../components/AppBar";
+import { Button } from "@mui/material";
+import { useAuth } from '../contexts/AuthContext';
 
 export async function action() {
   const contact = await createContact();
@@ -16,12 +18,12 @@ export async function loader({request}) {
 
 export default function Root() {
   const { contacts } = []
+  const auth = useAuth();
+  
  // const navigation = useNavigation();
   return (
     <>
       <div id="sidebar">
-        {/* <h1>React Router Contacts lk;l;;l;l</h1> */}
-
         <NavLink
           to={`tournament/`}
           className={({ isActive, isPending }) =>
@@ -92,6 +94,7 @@ export default function Root() {
             Результати
           </h2>
         </NavLink>
+        <Button onClick={() => auth.logout()}>Вихід</Button>
       </div>
       <div style={{  flex: 1,  }}>
         {/* <AppBar /> */}

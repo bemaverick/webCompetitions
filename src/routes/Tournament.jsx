@@ -97,6 +97,7 @@ const BasicTabs = observer(function() {
 
   return (
     <Box sx={{ width: '100%' }}>
+       <Button variant="text">Hello world</Button>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs centered value={tournamentStore.currentTableIndex} onChange={handleChange} aria-label="basic tabs example">
           {tables.fill(0).map((el, index) => (
@@ -119,7 +120,7 @@ const BasicTabs = observer(function() {
 
                 >
                   {Object.keys(tournamentStore.tournamentCategories).map((category) => (
-                    <MenuItem value={category}>{category}</MenuItem>
+                    <MenuItem key={category} value={category}>{category}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -147,10 +148,8 @@ const BasicTabs = observer(function() {
 
                   //currentTable.rounds[selectedRound][currentCompetitorIndex].results[selectedRound].result = 'win';
                   return (
-                    <div key={competitor1.id} style={{ backgroundColor: 'rgb(210,244,210)'}}>
-                      <ListItem
-                        disablePadding
-                      >
+                    <div key={competitor1.id} style={{ backgroundColor: 'rgb(210,244,210)',  borderBottom: "3px solid grey" }}>
+                      <ListItem disablePadding>
                         <ListItemButton role={undefined} onClick={() => tournamentStore.markWinner(competitor1.id, 'groupA')} dense>
                           <ListItemIcon>
                             <Checkbox
@@ -165,25 +164,28 @@ const BasicTabs = observer(function() {
                           <ListItemText primary={`${competitor1.lastName} ${competitor1.firstName}`} />
                         </ListItemButton>
                       </ListItem>
-                      <ListItem
-                        disablePadding
-                      >
-                        <ListItemButton role={undefined} onClick={() => tournamentStore.markWinner(competitor2?.id, 'groupA')} dense>
-                          <ListItemIcon>
-                            <Checkbox
-                              edge="start"
-                              checked={isCheckedSecond}
-
-                              //checked={isChecked}
-                              tabIndex={-1}
-                              disableRipple
-                              //inputProps={{ 'aria-labelledby': labelId }}
-                            />
-                          </ListItemIcon>
-                          <ListItemText primary={`${competitor2?.lastName} ${competitor2?.firstName}`} />
-                        </ListItemButton>
-                      </ListItem>
-                      <Divider />
+                      {competitor2 ? (
+                        <ListItem disablePadding>
+                          <ListItemButton role={undefined} onClick={() => tournamentStore.markWinner(competitor2.id, 'groupA')} dense>
+                            <ListItemIcon>
+                              <Checkbox
+                                edge="start"
+                                checked={isCheckedSecond}
+  
+                                //checked={isChecked}
+                                tabIndex={-1}
+                                disableRipple
+                                //inputProps={{ 'aria-labelledby': labelId }}
+                              />
+                            </ListItemIcon>
+                            <ListItemText primary={`${competitor2.lastName} ${competitor2.firstName}`} />
+                          </ListItemButton>
+                        </ListItem>
+                        ) : (
+                          <ListItem>
+                            <ListItemText primary={`Без суперника`} />
+                          </ListItem>
+                        )}
                     </div>
                   )
                 })}
@@ -199,9 +201,7 @@ const BasicTabs = observer(function() {
                   //currentTable.rounds[selectedRound][currentCompetitorIndex].results[selectedRound].result = 'win';
                   return (
                     <div key={competitor1.id} style={{ backgroundColor: 'rgb(244,210,210)' }}>
-                      <ListItem
-                        disablePadding
-                      >
+                      <ListItem disablePadding>
                         <ListItemButton role={undefined} onClick={() => tournamentStore.markWinner(competitor1.id, 'groupB')} dense>
                           <ListItemIcon>
                             <Checkbox
@@ -216,26 +216,26 @@ const BasicTabs = observer(function() {
                           <ListItemText primary={`${competitor1.lastName} ${competitor1.firstName}`} />
                         </ListItemButton>
                       </ListItem>
-                      <ListItem
-                        key={value}
-                        disablePadding
-                      >
-                        <ListItemButton role={undefined} onClick={() => tournamentStore.markWinner(competitor2?.id, 'groupB')} dense>
-                          <ListItemIcon>
-                            <Checkbox
-                              edge="start"
-                              checked={isCheckedSecond}
-
-                              //checked={isChecked}
-                              tabIndex={-1}
-                              disableRipple
-                              //inputProps={{ 'aria-labelledby': labelId }}
-                            />
-                          </ListItemIcon>
-                          <ListItemText primary={`${competitor2?.lastName} ${competitor2?.firstName}`} />
-                        </ListItemButton>
-                      </ListItem>
-                      <Divider />
+                      {competitor2 ? (
+                        <ListItem disablePadding>
+                          <ListItemButton role={undefined} onClick={() => tournamentStore.markWinner(competitor2.id, 'groupB')} dense>
+                            <ListItemIcon>
+                              <Checkbox
+                                edge="start"
+                                checked={isCheckedSecond}
+                                tabIndex={-1}
+                                disableRipple
+                                //inputProps={{ 'aria-labelledby': labelId }}
+                              />
+                            </ListItemIcon>
+                            <ListItemText primary={`${competitor2.lastName} ${competitor2.firstName}`} />
+                          </ListItemButton>
+                        </ListItem>
+                      ) : (
+                        <ListItem>
+                          <ListItemText primary={`Без суперника`} />
+                        </ListItem>
+                      )}
                     </div>
                   )
                 })}

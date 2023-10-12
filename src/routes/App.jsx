@@ -9,6 +9,7 @@ import Tournament from "./Tournament"
 import TournamentSettings from "./TournamentSettings"
 import TournamentCategories from "./TournamentCategories"
 import TournamentCompetitors from "./TournamentCompetitors"
+import TournamentResults from "./TournamentResults";
 
 
 import SignUp from "./SignUp"
@@ -36,7 +37,7 @@ function App() {
               <Route index path="/tournamentSettings" element={<TournamentSettings />} />
               <Route index path="/categories" element={<TournamentCategories />} />
               <Route index path="/competitors" element={<TournamentCompetitors />} />
-              <Route index path="/results" element={<SignIn />} />
+              <Route path="/results" element={<TournamentResults />} />
             </Route>
             <Route path="/signup" element={<SignUp/>} />
             <Route path="/signin" element={<SignIn/>} />
