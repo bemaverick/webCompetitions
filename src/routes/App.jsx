@@ -32,12 +32,12 @@ function App() {
                 </PrivateRoute>
               }
             >
-              <Route index element={<InitialPage />} />
-              <Route index path="/tournament" element={<Tournament />} />
+              {/* <Route index element={<InitialPage />} /> */}
+              <Route index element={<Tournament />} />
               <Route index path="/tournamentSettings" element={<TournamentSettings />} />
-              <Route index path="/categories" element={<TournamentCategories />} />
-              <Route index path="/competitors" element={<TournamentCompetitors />} />
-              <Route path="/results" element={<TournamentResults />} />
+              <Route index path="/tournamentCategories" element={<TournamentCategories />} />
+              <Route index path="/tournamentCompetitors" element={<TournamentCompetitors />} />
+              <Route path="/tournamentResults" element={<TournamentResults />} />
             </Route>
             <Route path="/signup" element={<SignUp/>} />
             <Route path="/signin" element={<SignIn/>} />

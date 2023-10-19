@@ -108,7 +108,7 @@ export default observer(function TournamentCompetitors() {
           <Button
             variant='outlined'
             onClick={() => {
-              tournamentStore.addCompetitor({ 
+              tournamentStore.addCompetitor_OLD({ 
                 firstName, lastName, weight, category
               });
               setFirstName('');

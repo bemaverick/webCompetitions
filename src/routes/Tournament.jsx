@@ -97,7 +97,6 @@ const BasicTabs = observer(function() {
 
   return (
     <Box sx={{ width: '100%' }}>
-       <Button variant="text">Hello world</Button>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs centered value={tournamentStore.currentTableIndex} onChange={handleChange} aria-label="basic tabs example">
           {tables.fill(0).map((el, index) => (

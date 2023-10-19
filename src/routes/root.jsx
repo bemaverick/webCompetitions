@@ -1,8 +1,29 @@
 import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "react-router-dom";
 import { getContacts, createContact } from "../contacts";
-import AppBar from "../components/AppBar";
 import { Button } from "@mui/material";
 import { useAuth } from '../contexts/AuthContext';
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import CssBaseline from '@mui/material/CssBaseline';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import List from '@mui/material/List';
+import Divider from '@mui/material/Divider';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import InboxIcon from '@mui/icons-material/MoveToInbox';
+import MailIcon from '@mui/icons-material/Mail';
+import Typography from '@mui/material/Typography';
+import { useNavigate, useLocation } from "react-router-dom";
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
+import CategoryIcon from '@mui/icons-material/Category';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+
 
 export async function action() {
   const contact = await createContact();
@@ -16,166 +37,123 @@ export async function loader({request}) {
   return { contacts };
 }
 
+
+const drawerWidth = 260;
+
+const drawerItems = [
+  {
+    id: '1',
+    title: "Турнір",
+    path: "/",
+    icon: () => <EmojiEventsIcon />
+  }, {
+    id: '2',
+    title: "Налаштування",
+    path: "/tournamentSettings",
+    icon: () => <DisplaySettingsIcon />
+
+  }, , {
+    id: '3',
+    title: "Категорії",
+    barTitle: "Категорії турніру",
+    path: "/tournamentCategories",
+    icon: () => <CategoryIcon />
+  }, {
+    id: '4',
+    title: "Учасники",
+    path: "/tournamentCompetitors",
+    icon: () => <PeopleAltIcon />
+
+  }, {
+    id: '5',
+    title: "Результати",
+    path: "/tournamentResults",
+    icon: () => <FormatListNumberedIcon />
+
+  },
+]
+
 export default function Root() {
-  const { contacts } = []
   const auth = useAuth();
+  const navigate = useNavigate();
+  const pathname = useLocation().pathname;
+  const currentItem = drawerItems.filter((item => item.path === pathname))[0];
+  const appBarTitle = currentItem.barTitle || currentItem.title;
+  return (
+    <Box sx={{ display: 'flex' }}>
+      <AppBar
+        position="fixed"
+        sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}
+      >
+        <Toolbar>
+          <Typography variant="h6" noWrap component="div">
+            {appBarTitle}
+          </Typography>
+        </Toolbar>
+      </AppBar>
+    <Drawer
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+        },
+      }}
+      variant="permanent"
+      anchor="left"
+    >
+      <Toolbar />
+      <Divider />
+      <List>
+        {drawerItems.map((item, index) => (
+          <ListItem onClick={() => navigate(item.path)} key={item.id} disablePadding>
+            <ListItemButton selected={pathname === item.path}>
+              <ListItemIcon>
+                {item.icon()}
+              </ListItemIcon>
+              <ListItemText primary={item.title} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+      {/* <Divider />
+      <List>
+        {['All mail'].map((text, index) => (
+          <ListItem key={text} disablePadding>
+            <ListItemButton>
+              <ListItemIcon>
+                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+              </ListItemIcon>
+              <ListItemText primary={text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List> */}
+    </Drawer>
+    <Box
+      component="main"
+      sx={{ flexGrow: 1, height: '100vh', overflow: 'hidden', backgroundColor: '#fafafa', p: 0 }}
+    >
+      {pathname !== '/tournamentCategories' && (
+        <Toolbar />
+      )}
+      <Outlet /> 
+    </Box>
+  </Box>
+  )
   
  // const navigation = useNavigation();
   return (
-    <>
-      <div id="sidebar">
-        <NavLink
-          to={`tournament/`}
-          className={({ isActive, isPending }) =>
-            isActive
-              ? "active"
-              : isPending
-              ? "pending"
-              : ""
-          }
-        >
-          <h2>
-            Турнір
-          </h2>
-        </NavLink>
-        <NavLink
-          to={`tournamentSettings/`}
-          className={({ isActive, isPending }) =>
-            isActive
-              ? "active"
-              : isPending
-              ? "pending"
-              : ""
-          }
-        >
-          <h2>
-            Налаштування Турніру
-          </h2>
-        </NavLink>
-        <NavLink
-          to={`categories/`}
-          className={({ isActive, isPending }) =>
-            isActive
-              ? "active"
-              : isPending
-              ? "pending"
-              : ""
-          }
-        >
-          <h2>
-            Категорії
-          </h2>
-        </NavLink>
-        <NavLink
-          to={`competitors/`}
-          className={({ isActive, isPending }) =>
-            isActive
-              ? "active"
-              : isPending
-              ? "pending"
-              : ""
-          }
-        >
-          <h2>
-            Учасники
-          </h2>
-        </NavLink>
-        <NavLink
-          to={`results/`}
-          className={({ isActive, isPending }) =>
-            isActive
-              ? "active"
-              : isPending
-              ? "pending"
-              : ""
-          }
-        >
-          <h2>
-            Результати
-          </h2>
-        </NavLink>
-        <Button onClick={() => auth.logout()}>Вихід</Button>
-      </div>
-      <div style={{  flex: 1,  }}>
-        {/* <AppBar /> */}
-        <Outlet />
-      </div>
-
-    </>
-  );
-}
-
-export function Roo1t() {
-  const { contacts } = []
-  const navigation = useNavigation();
-  return (
-    <>
-      <div id="sidebar">
-        <h1>React Router Contacts</h1>
-        <div>
-          <Form id="search-form" role="search">
-            <input
-              id="q"
-              aria-label="Search contacts"
-              placeholder="Search"
-              type="search"
-              name="q"
-            />
-            <div
-              id="search-spinner"
-              aria-hidden
-              hidden={true}
-            />
-            <div
-              className="sr-only"
-              aria-live="polite"
-            ></div>
-          </Form>
-          <Form method="post">
-            <button type="submit">New</button>
-          </Form>
-        </div>
-        <nav>
-          {contacts.length ? (
-             <ul>
-              {contacts.map((contact) => (
-                <li key={contact.id}>
-                  <NavLink
-                    to={`contacts/${contact.id}`}
-                    className={({ isActive, isPending }) =>
-                      isActive
-                        ? "active"
-                        : isPending
-                        ? "pending"
-                        : ""
-                    }
-                  >
-                    {contact.first || contact.last ? (
-                      <>
-                        {contact.first} {contact.last}
-                      </>
-                    ) : (
-                      <i>No Name</i>
-                    )}{" "}
-                    {contact.favorite && <span>★</span>}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>
-              <i>No contacts</i>
-            </p>
-          )}
-        </nav>
-      </div>
-      <div id="detail"
-        className={
-          navigation.state === "loading" ? "loading" : ""
-        }
+    <Box sx={{ display: 'flex', border: '2px solid green' }}>
+      {OldDrawer}
+      <Box
+        component="main"
+        sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3, border: '2px solid blue' }}
       >
         <Outlet />
-      </div>
-    </>
+      </Box>
+
+    </Box>
   );
 }

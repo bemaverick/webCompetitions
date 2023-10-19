@@ -38,10 +38,62 @@ const FAKE_competitorsList = [
 
 //  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '110_man_right', id: '20', stats: { 0: { result: 'win' }}},
 //result can be win|lose|idle
+
+
+const weightCategoriesDefault = [
+  {
+    id: '60',
+    value: '60',
+  }, {
+    id: '70',
+    value: '70',
+  }, {
+    id: '80',
+    value: '80',
+    
+  }, {
+    id: '90',
+    value: '90',
+    
+  }, {
+    id: '100',
+    value: '100',
+    
+  }, {
+    id: '100+',
+    value: '100+',
+    
+  }
+]
+
+const classificationCategoriesDefault = [
+  {
+    id: '1',
+    label: 'Дорослі',
+  }, {
+    id: '2',
+    label: 'Юніори',
+  }, {
+    id: '3',
+    label: 'Молодь',
+  }, {
+    id: '4',
+    label: 'Ветерани',
+  }, {
+    id: '5',
+    label: 'Професіонали',
+  }, {
+    id: '6',
+    label: 'Аматори',
+  },
+]
+
 class TournamentStore {
   constructor() {
     makeAutoObservable(this);
   }
+
+  weightUnit = { value: 'kg', factor: 1, label: 'кг' };
 
   tournamentName = '';
 
@@ -88,16 +140,37 @@ class TournamentStore {
     },
   }
 
-  weightCategories = [];
+  weightCategories = weightCategoriesDefault;
+  //weightCategories = [];
 
-  classificationCategories = [];
+  // classificationCategories = [];
+  classificationCategories = classificationCategoriesDefault;
 
   tournamentCategories = FAKE_tournamentCategories;
+
+  newTournamentCategories = {
+
+  }
 
   competitorsList = FAKE_competitorsList;
 
   results = {
 
+  }
+
+  setTournamentBasicSettings = ({ 
+    tournamentName,
+    tournamentDate,
+    tablesCount,
+    weightCategories,
+    classificationCategories
+  }) => {
+    console.log('setTournamentBasicSettings', weightCategories, classificationCategories)
+    this.tournamentName = tournamentName;
+    this.tournamentDate = tournamentDate;
+    this.tablesCount = tablesCount;
+    this.weightCategories = weightCategories;
+    this.classificationCategories = classificationCategories;
   }
 
   setTournamentName = (name) => this.tournamentName = name;
@@ -138,7 +211,84 @@ class TournamentStore {
     console.log('tournamentCategories', this.tournamentCategories)
   }
 
-  addCompetitor = ({ firstName, lastName, weight, category }) => {
+  createTournamentCategories = ({ classification, weightCategories, leftHand, rightHand, men, women }) => {
+    const createdCategories = {};
+
+    for (const [key, category] of Object.entries(weightCategories)) {
+      const categoryTitleShort = `${classification.label} ${category.value} ${this.weightUnit.label}`;
+      const configDefaults = {
+        classification: _.cloneDeep(classification),
+        weightCategory: _.cloneDeep(category),
+      }
+      if (leftHand && men) {
+        const id = uuidv4();
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, чоловіки, ліва рука`;
+        createdCategories[id] = {
+          categoryTitleFull,
+          categoryTitleShort,
+          id,
+          config: {
+            ...configDefaults,
+            hand: 'left',
+            gender: 'men',
+          }
+        };
+      }
+      if (rightHand && men) {
+        const id = uuidv4();
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, чоловіки, права рука`;
+        createdCategories[id] = {
+          categoryTitleFull,
+          categoryTitleShort,
+          id,
+          config: {
+            ...configDefaults,
+            hand: 'right',
+            gender: 'men',
+          }
+        };
+      }
+      if (leftHand && women) {
+        const id = uuidv4();
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, жінки, ліва рука`;
+        createdCategories[id] = {
+          categoryTitleFull,
+          categoryTitleShort,
+          id,
+          config: {
+            ...configDefaults,
+            hand: 'left',
+            gender: 'women',
+          }
+        };
+      }
+      if (rightHand && women) {
+        const id = uuidv4();
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, жінки, права рука`;
+        createdCategories[id] = {
+          categoryTitleFull,
+          categoryTitleShort,
+          id,
+          config: {
+            ...configDefaults,
+            hand: 'right',
+            gender: 'women',
+          }
+        };
+      }
+    }
+  
+    this.newTournamentCategories = {
+      ...createdCategories,
+      ...this.newTournamentCategories,
+    };
+
+    console.log(classification, Object.values(weightCategories), leftHand, rightHand, men, women)
+    console.log("createdCategories", createdCategories)
+
+  }
+
+  addCompetitor_OLD = ({ firstName, lastName, weight, category }) => {
     const newCompetitor = {
       firstName, 
       lastName, 
@@ -147,6 +297,24 @@ class TournamentStore {
       id: uuidv4(),
     }
     this.competitorsList = [newCompetitor, ...this.competitorsList]
+  }
+
+  addCompetitorViaCategory = ({ firstName, lastName, weight, tournamentCategoryId }) => {
+    const tournamentCategory = this.newTournamentCategories[tournamentCategoryId];
+    console.log('newCompetitor',tournamentCategoryId, tournamentCategory );
+
+    const newCompetitor = {
+      tournamentCategoryIds: [tournamentCategoryId],
+      leftHand: tournamentCategory.config.hand === 'left',
+      rightHand: tournamentCategory.config.hand === 'right',
+      gender: tournamentCategory.config.gender,
+      firstName, 
+      lastName, 
+      weight, 
+      id: uuidv4(),
+    }
+    console.log('newCompetitor', toJS(newCompetitor));
+    this.competitorsList = [newCompetitor, ...this.competitorsList];
   }
 
   setTableCategory = (tableId, category) => {
