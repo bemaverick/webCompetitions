@@ -152,7 +152,7 @@ class TournamentStore {
 
   }
 
-  competitorsList = FAKE_competitorsList;
+  competitorsList = [];
 
   results = {
 
@@ -299,15 +299,15 @@ class TournamentStore {
     this.competitorsList = [newCompetitor, ...this.competitorsList]
   }
 
-  addCompetitorViaCategory = ({ firstName, lastName, weight, tournamentCategoryId }) => {
-    const tournamentCategory = this.newTournamentCategories[tournamentCategoryId];
-    console.log('newCompetitor',tournamentCategoryId, tournamentCategory );
+  addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds }) => {
+    //const tournamentCategory = this.newTournamentCategories[tournamentCategoryId];
+   // console.log('newCompetitor',tournamentCategoryId, tournamentCategory );
 
     const newCompetitor = {
-      tournamentCategoryIds: [tournamentCategoryId],
-      leftHand: tournamentCategory.config.hand === 'left',
-      rightHand: tournamentCategory.config.hand === 'right',
-      gender: tournamentCategory.config.gender,
+      tournamentCategoryIds,
+      // leftHand: tournamentCategory.config.hand === 'left',
+      // rightHand: tournamentCategory.config.hand === 'right',
+      // gender: tournamentCategory.config.gender,
       firstName, 
       lastName, 
       weight, 

@@ -25,6 +25,8 @@ import { tournamentStore } from '../stores/tournament';
 import DoneIcon from '@mui/icons-material/Done';
 import _ from 'lodash';
 import Toolbar from '@mui/material/Toolbar';
+import { toJS } from 'mobx';
+import { CompetitorRow } from '../components/Competitor';
 
 
 const theme = createTheme();
@@ -42,7 +44,9 @@ const genderTranslations = {
 
 export default observer(function TournamentCategories() {
   const [creatingCategoryModal, setCreatingCategoryModal] = React.useState(false);
-  const [currentCategoryId, setCurrentCategoryId] = React.useState('');
+  const [currentCategoryId, setCurrentCategoryId] = React.useState(
+    Object.keys(tournamentStore.newTournamentCategories)[0] || ''
+  );
 
   const navigate = useNavigate();
 
@@ -72,7 +76,11 @@ export default observer(function TournamentCategories() {
           </Stack>
          
         </Stack>
-        <ModalForCategories modalVisible={creatingCategoryModal} onClose={() => setCreatingCategoryModal(false)} />
+        <ModalForCategories
+          modalVisible={creatingCategoryModal}
+          onClose={() => setCreatingCategoryModal(false)}
+          setCurrentCategory={(id) => setCurrentCategoryId(id)}
+        />
       </ThemeProvider>  
     )
   }
@@ -119,7 +127,11 @@ export default observer(function TournamentCategories() {
             />
           </Stack>
        </Stack>
-       <ModalForCategories modalVisible={creatingCategoryModal} onClose={() => setCreatingCategoryModal(false)} />
+       <ModalForCategories
+        modalVisible={creatingCategoryModal}
+        onClose={() => setCreatingCategoryModal(false)}
+        setCurrentCategory={(id) => setCurrentCategoryId(id)}
+      />
     </ThemeProvider>
   )
 
@@ -237,15 +249,37 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
   )
 }
 
+
 const CategoryDetailsView = observer((props) => {
   const currentTournamentCategory = tournamentStore.newTournamentCategories[props.tournamentCategoryId];
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [weight, setWeight] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const navigate = useNavigate();
+
+  const navigateToCompetitors = () => {
+    navigate('/tournamentCompetitors', { state: { tournamentCategoryId: props.tournamentCategoryId }});
+  }
+
+  const categoryCompetitorsList = React.useMemo(() => {
+    let filtered = tournamentStore.competitorsList.filter(
+      (competitor => competitor.tournamentCategoryIds.includes(props.tournamentCategoryId)))
+    if (searchQuery.length > 0) {
+      filtered = filtered.filter((competitor) => (
+        competitor.firstName.toLowerCase().includes(searchQuery.toLowerCase())
+        || competitor.lastName.toLowerCase().includes(searchQuery.toLowerCase())
+        || competitor.weight.toLowerCase().includes(searchQuery.toLowerCase())
+      ))
+    }
+    return filtered;
+
+  }, [props.tournamentCategoryId, tournamentStore.competitorsList, searchQuery]);
+  console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
   
   return (
     <Stack sx={{ flex: 9, flexDirection: 'column', p: 2 }}>
-      <Typography variant="h6" component="h6" sx={{ p: 2, textAlign: 'center' }}>
+      <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
         {currentTournamentCategory?.categoryTitleFull}
       </Typography>
       <Grid container spacing={1} sx={{ alignItems: 'top'}}>
@@ -275,7 +309,6 @@ const CategoryDetailsView = observer((props) => {
             label="Ім'я"
             variant="outlined"
             value={firstName}
-
           />
         </Grid>
         <Grid item xs={2}>
@@ -303,17 +336,46 @@ const CategoryDetailsView = observer((props) => {
             //size='small'
             fullWidth
             variant='outlined'
-            onClick={() => {
-              tournamentStore.addCompetitorViaCategory({ 
-                firstName, lastName, weight, tournamentCategoryId: props.tournamentCategoryId,
-              });
-              setFirstName('');
-              setLastName('');
-              setWeight('');
-            }}  
+            onClick={navigateToCompetitors}
+            // onClick={() => {
+            //   tournamentStore.addCompetitorViaCategory({ 
+            //     firstName, lastName, weight, tournamentCategoryId: props.tournamentCategoryId,
+            //   });
+            //   setFirstName('');
+            //   setLastName('');
+            //   setWeight('');
+            // }}  
           >Додати учасника</Button>
         </Grid>
+
       </Grid>
+      <Stack elevation={2} sx={{ flexGrow: 1, mt: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
+        <TextField
+          fullWidth
+          sx={{ mb: 2 }}
+          size='small'
+          onChange={(event) => {
+            setSearchQuery(event.target.value);
+          }}
+          id="outlined-basic"
+          label="Пошук по учасниках"
+          variant="outlined"
+          value={searchQuery}
+        />
+        <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
+          {categoryCompetitorsList.map((competitor, index) => (
+            <CompetitorRow key={competitor.id}
+              position={index + 1}
+              firstName={competitor.firstName}
+              lastName={competitor.lastName}
+              weight={`${competitor.weight} ${tournamentStore.weightUnit.label}`}
+              categories={competitor.tournamentCategoryIds.map(
+                (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
+               )}
+            />
+          ))}
+        </Stack>
+      </Stack>
     </Stack>
   )
 })
@@ -368,7 +430,10 @@ const ModalForCategories = observer((props) => {
       rightHand: right,
       men,
       women
-    })    
+    });
+    console.log('current', Object.keys(tournamentStore.newTournamentCategories)[0])
+    props.setCurrentCategory(Object.keys(tournamentStore.newTournamentCategories)[0]);
+
   }
 
   console.log('selectedWeightCategories', selectedWeightCategories)

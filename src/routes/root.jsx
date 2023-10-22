@@ -135,7 +135,7 @@ export default function Root() {
       component="main"
       sx={{ flexGrow: 1, height: '100vh', overflow: 'hidden', backgroundColor: '#fafafa', p: 0 }}
     >
-      {pathname !== '/tournamentCategories' && (
+      {pathname !== '/tournamentCategories' && pathname !== '/tournamentCompetitors' && (
         <Toolbar />
       )}
       <Outlet /> 
