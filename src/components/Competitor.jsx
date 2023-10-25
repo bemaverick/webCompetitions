@@ -15,6 +15,15 @@ export const CompetitorRow = (props) => {
     setAnchorEl(null);
   };
 
+  const onPressDelete = () => {
+    handleClose();
+    props.onDelete();
+  }
+
+  const onPressEdit = () => {
+    handleClose();
+  }
+
   return (
     <>
       <Menu
@@ -26,37 +35,36 @@ export const CompetitorRow = (props) => {
           'aria-labelledby': 'basic-button',
         }}
       >
-        <MenuItem onClick={handleClose}>Profile</MenuItem>
-        <MenuItem onClick={handleClose}>My account</MenuItem>
-        <MenuItem onClick={handleClose}>Logout</MenuItem>
+        <MenuItem onClick={onPressDelete}>Видалити</MenuItem>
+        <MenuItem onClick={onPressEdit}>Редагувати</MenuItem>
       </Menu>
       <Grid container columnSpacing={1} sx={{  pt:1, pb: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)'  }}>
-        <Grid item xs={3}> 
-          <Typography variant="body1" gutterBottom>
+        <Grid item xs={3} sx={{ }}> 
+          <Typography variant="body1">
             {props.position}. {props.lastName}
           </Typography>
         </Grid>
         <Grid item xs={3}> 
-          <Typography variant="body1" gutterBottom>
+          <Typography variant="body1">
             {props.firstName}
           </Typography>
         </Grid>
         <Grid item xs={1}> 
-          <Typography variant="body1" gutterBottom>
+          <Typography variant="body1">
             {props.weight}
           </Typography>
         </Grid>
         <Grid item xs={5}>
-          <div style={{ display: 'flex', alignItems: 'center'}}>
+          <div style={{ display: 'flex', }}>
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1}}>
               {props.categories.map((name) => (
-                <Typography textAlign={'center'} component="p" variant="body1">
+                <Typography key={name} textAlign={'center'} component="p" variant="body1">
                   {name}
                 </Typography>  
               ))}
             </div>
-            <IconButton onClick={handleClick} aria-label="більше">
-              <MoreVertIcon />
+            <IconButton sx={{ my: -1 }} onClick={handleClick} aria-label="більше">
+              <MoreVertIcon fontSize='small' />
             </IconButton>
           </div>
         </Grid>

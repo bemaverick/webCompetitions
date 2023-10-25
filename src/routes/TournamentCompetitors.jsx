@@ -97,28 +97,29 @@ export default observer(function TournamentCompetitors() {
                 fullWidth
                 size='small'
                 onChange={(event) => {
-                  setLastName(event.target.value);
-                }}
-                margin="normal"
-                id="outlined-basic"
-                label="Прізвище"
-                variant="outlined"
-                autoFocus={!!location?.state?.tournamentCategoryId}
-                value={lastName}
-              />
-            </Grid>
-            <Grid item xs={1.5}>
-              <TextField
-                fullWidth
-                size='small'
-                onChange={(event) => {
                   setFirstName(event.target.value);
                 }}
                 margin="normal"
                 id="outlined-basic"
                 label="Ім'я"
                 variant="outlined"
+                autoFocus={!!location?.state?.tournamentCategoryId}
                 value={firstName}
+              />
+
+            </Grid>
+            <Grid item xs={1.5}>
+              <TextField
+                fullWidth
+                size='small'
+                onChange={(event) => {
+                  setLastName(event.target.value);
+                }}
+                margin="normal"
+                id="outlined-basic"
+                label="Прізвище"
+                variant="outlined"
+                value={lastName}
               />
             </Grid>
             <Grid item xs={6}>
@@ -197,6 +198,7 @@ export default observer(function TournamentCompetitors() {
           <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
             {сompetitorsList.map((competitor, index) => (
               <CompetitorRow
+                onDelete={() => tournamentStore.removeCompetitor(competitor.id)}
                 key={competitor.id}
                 position={index + 1}
                 firstName={competitor.firstName}

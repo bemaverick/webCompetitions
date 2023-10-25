@@ -133,9 +133,18 @@ export default function Root() {
     </Drawer>
     <Box
       component="main"
-      sx={{ flexGrow: 1, height: '100vh', overflow: 'hidden', backgroundColor: '#fafafa', p: 0 }}
+      sx={{
+        flexGrow: 1,
+        height: '100vh',
+        overflow: 'hidden',
+        //backgroundColor: '#fafafa',
+        backgroundColor: '#F3F6F9',
+        p: 0
+      }}
     >
-      {pathname !== '/tournamentCategories' && pathname !== '/tournamentCompetitors' && (
+      {pathname !== '/tournamentCategories'
+      && pathname !== '/tournamentCompetitors'
+      && pathname !== '/' && (
         <Toolbar />
       )}
       <Outlet /> 

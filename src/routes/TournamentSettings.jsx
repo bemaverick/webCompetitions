@@ -166,7 +166,7 @@ export default observer(function TournamentSettings() {
                 <Grid item xs={6} >
                   <FormControl fullWidth margin='normal'>
                     {/* <InputLabel id="demo-simple-select-label">Дата проведення</InputLabel> */}
-                    <DatePicker label="Дата проведення" value={tournamentDate}  onChange={setTournamentDate} />
+                    <DatePicker label="Дата проведення" value={new Date(tournamentDate)}  onChange={setTournamentDate} />
                     <FormHelperText>Дата проведення турніру</FormHelperText>
                   </FormControl>
                 </Grid>

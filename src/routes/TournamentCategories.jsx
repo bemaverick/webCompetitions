@@ -282,72 +282,16 @@ const CategoryDetailsView = observer((props) => {
       <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
         {currentTournamentCategory?.categoryTitleFull}
       </Typography>
-      <Grid container spacing={1} sx={{ alignItems: 'top'}}>
-        <Grid item xs={4}>
-          <TextField
-            fullWidth
-            size='small'
-            onChange={(event) => {
-              setLastName(event.target.value);
-            }}
-            margin="normal"
-            id="outlined-basic"
-            label="Прізвище"
-            variant="outlined"
-            value={lastName}
-          />
-        </Grid>
-        <Grid item xs={3}>
-          <TextField
-            fullWidth
-            size='small'
-            onChange={(event) => {
-              setFirstName(event.target.value);
-            }}
-            margin="normal"
-            id="outlined-basic"
-            label="Ім'я"
-            variant="outlined"
-            value={firstName}
-          />
-        </Grid>
-        <Grid item xs={2}>
-          <TextField
-  
-            size='small'
-            fullWidth
-            onChange={(event) => {
-              const regex = /^[0-9\b]+$/;
-              // if value is not blank, then test the regex
-              if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
-                setWeight(event.target.value)
-              }
-            }}
-            margin="normal"
-            id="outlined-basic"
-            label="Вага учасника"
-            variant="outlined"
-            value={weight}
-          />
-        </Grid>
+      <Grid container justifyContent={'center'} sx={{ p: 2 }}>
         <Grid item xs={3}>
           <Button
-            sx={{ height: '40px', mt: 2 }}
-            //size='small'
+            //sx={{ height: '40px', mt: 2 }}
+            size='noraml'
             fullWidth
-            variant='outlined'
+            variant='contained'
             onClick={navigateToCompetitors}
-            // onClick={() => {
-            //   tournamentStore.addCompetitorViaCategory({ 
-            //     firstName, lastName, weight, tournamentCategoryId: props.tournamentCategoryId,
-            //   });
-            //   setFirstName('');
-            //   setLastName('');
-            //   setWeight('');
-            // }}  
           >Додати учасника</Button>
         </Grid>
-
       </Grid>
       <Stack elevation={2} sx={{ flexGrow: 1, mt: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
         <TextField

@@ -3,7 +3,7 @@
 import { makeAutoObservable, autorun, toJS } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import _ from 'lodash';
-
+import { makePersistable } from 'mobx-persist-store';
 
 const FAKE_tournamentCategories = {
   '90_man_left': [],
@@ -91,13 +91,33 @@ const classificationCategoriesDefault = [
 class TournamentStore {
   constructor() {
     makeAutoObservable(this);
+
+    makePersistable(
+      this,
+      {
+        name: 'SampleStore',
+        properties: [
+          'tournamentName',
+          'tournamentDate',
+          'tablesCount',
+          'currentTableIndex',
+          'tables',
+          'weightCategories',
+          'classificationCategories',
+          'newTournamentCategories',
+          'competitorsList',
+          'results'
+        ],
+        storage: window.localStorage
+      }
+    );
   }
 
   weightUnit = { value: 'kg', factor: 1, label: 'кг' };
 
   tournamentName = '';
 
-  tournamentDate = new Date();
+  tournamentDate = Date.now();
 
   tablesCount = 3;
 
@@ -141,9 +161,7 @@ class TournamentStore {
   }
 
   weightCategories = weightCategoriesDefault;
-  //weightCategories = [];
 
-  // classificationCategories = [];
   classificationCategories = classificationCategoriesDefault;
 
   tournamentCategories = FAKE_tournamentCategories;
@@ -153,10 +171,10 @@ class TournamentStore {
   }
 
   competitorsList = [];
+  // competitorsList = FAKE_competitorsList;
 
-  results = {
 
-  }
+  results = {};
 
   setTournamentBasicSettings = ({ 
     tournamentName,
@@ -168,16 +186,16 @@ class TournamentStore {
     console.log('setTournamentBasicSettings', weightCategories, classificationCategories)
     this.tournamentName = tournamentName;
     this.tournamentDate = tournamentDate;
-    this.tablesCount = tablesCount;
     this.weightCategories = weightCategories;
     this.classificationCategories = classificationCategories;
+    this.setTablesConfig(tablesCount);
   }
 
   setTournamentName = (name) => this.tournamentName = name;
 
   setTournamentDate = (date) => this.tournamentDate = date;
 
-  setTablesCount = (tablesCount) => {
+  setTablesConfig = (tablesCount) => {
     this.tablesCount = tablesCount;
     for (let i = 0; i < tablesCount; i ++ ) {
       this.tables[i] = {
@@ -313,8 +331,13 @@ class TournamentStore {
       weight, 
       id: uuidv4(),
     }
+
     console.log('newCompetitor', toJS(newCompetitor));
     this.competitorsList = [newCompetitor, ...this.competitorsList];
+  }
+
+  removeCompetitor = (competitorId) => {
+    this.competitorsList = this.competitorsList.filter(({ id }) => id !== competitorId);
   }
 
   setTableCategory = (tableId, category) => {
@@ -329,8 +352,8 @@ class TournamentStore {
   }
 
   setupFirstRound = () => {
-    const actualCategory = this.competitorsList.filter(({ category }) => category === this.currentTable.category);
-    const groupA = actualCategory.map((competitor) => ({...competitor, stats: { 0: { result: 'idle' }}}))
+    const actualCategory = this.competitorsList.filter(({ tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category));
+    const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: 'idle' }}}))
     this.currentTable.rounds[0].groupA = _.shuffle(groupA);
     this.currentTable.selectedRound = 0;
     this.currentRound.groupB = [];
@@ -424,6 +447,7 @@ class TournamentStore {
   }
 
   markWinner = (competitorId, group) => {
+    console.log('competitorId', competitorId, group)
     let currentGroup;
     if (group === 'groupA') {
       currentGroup = this.currentGroupA;
@@ -491,8 +515,6 @@ class TournamentStore {
 
 
 }
-
-
 
 export const tournamentStore = new TournamentStore();
 
