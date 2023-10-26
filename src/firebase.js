@@ -6,8 +6,9 @@ import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBD2xxjlmDY29x56Cj_cSqNt4UirBWRN4o",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
   authDomain: "popeye-arm.firebaseapp.com",
   databaseURL: "https://popeye-arm.firebaseio.com",
   projectId: "popeye-arm",
