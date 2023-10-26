@@ -1,6 +1,6 @@
 
 import React from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { HashRouter, Routes, Route } from "react-router-dom"
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { AuthProvider } from "../contexts/AuthContext"
@@ -17,11 +17,13 @@ import SignIn from "./SignIn"
 import InitialPage from "./InitialPage"
 import Root from "./root"
 
+//Browser router was changed to HashRouter
+//because GitHub pages doesn't support browser history
 
 function App() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <BrowserRouter>
+      <HashRouter>
         <AuthProvider>
           <Routes>
             <Route
@@ -43,7 +45,7 @@ function App() {
             <Route path="/signin" element={<SignIn/>} />
           </Routes>
         </AuthProvider>
-      </BrowserRouter>
+      </HashRouter>
     </LocalizationProvider>
   )
 }
