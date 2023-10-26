@@ -46,7 +46,14 @@ const drawerItems = [
     title: "Турнір",
     path: "/",
     icon: () => <EmojiEventsIcon />
-  }, {
+  },
+    {
+    id: '6',
+    title: "Фінали",
+    path: "/tournamentFinals",
+    icon: () => <EmojiEventsIcon />
+  }, 
+  {
     id: '2',
     title: "Налаштування",
     path: "/tournamentSettings",

@@ -106,7 +106,8 @@ class TournamentStore {
           'classificationCategories',
           'newTournamentCategories',
           'competitorsList',
-          'results'
+          'results',
+          'postponedFinals'
         ],
         storage: window.localStorage
       }
@@ -167,6 +168,10 @@ class TournamentStore {
   tournamentCategories = FAKE_tournamentCategories;
 
   newTournamentCategories = {
+
+  }
+
+  postponedFinals = {
 
   }
 
@@ -349,6 +354,19 @@ class TournamentStore {
     if (state === 'started') {
       this.setupFirstRound(tableId);
     }
+    if (state === 'idle') {
+      this.tables[tableId] = { // initial
+        category: '',
+        state: 'idle', //idle, started, or finished
+        rounds: {
+          0: {
+            groupA: [],
+            groupB: []
+          }
+        },
+        selectedRound: 0
+      };
+    }
   }
 
   setupFirstRound = () => {
@@ -434,11 +452,14 @@ class TournamentStore {
     if (newRoundGroupA.length === 1 && newRoundGroupB.length === 0) {
       this.setTableStatus(this.currentTableIndex, 'finished');
       finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));
+      this.logRoundResults(finishedGroup);
+      return;
+
     }
 
-     console.log('nextRound', nextRoundIndex)
-     console.log('groupA', toJS(newRoundGroupA))
-     console.log('groupB',  toJS(newRoundGroupB))
+    //  console.log('nextRound', nextRoundIndex)
+    //  console.log('groupA', toJS(newRoundGroupA))
+    //  console.log('groupB',  toJS(newRoundGroupB))
 
     
      this.logRoundResults(finishedGroup);
@@ -476,6 +497,22 @@ class TournamentStore {
     this.results[this.currentTable.category] = [...finishedGroup, ...this.results[this.currentTable.category]]
 
     console.log(toJS(this.results))
+  }
+
+  postponeFinalForCategory = () => {
+    const categoryId = this.currentTable.category;
+    this.postponedFinals = {
+      [categoryId]: {
+        ..._.cloneDeep(this.currentTable)
+      },
+      ...this.postponedFinals,
+    };
+    this.setTableStatus(this.currentTableIndex, 'idle');
+  };
+
+  startPostponedFinal = (currentTableIndex) => {
+    const categoryHistory = this.postponedFinals[this.currentTable.category];
+    this.tables[currentTableIndex] = _.cloneDeep(categoryHistory);
   }
 
   get
