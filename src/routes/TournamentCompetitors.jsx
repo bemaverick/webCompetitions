@@ -198,7 +198,7 @@ export default observer(function TournamentCompetitors() {
           <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
             {сompetitorsList.map((competitor, index) => (
               <CompetitorRow
-                onDelete={() => tournamentStore.removeCompetitor(competitor.id)}
+                onDelete={() => tournamentStore.removeCompetitorFromList(competitor.id)}
                 key={competitor.id}
                 position={index + 1}
                 firstName={competitor.firstName}

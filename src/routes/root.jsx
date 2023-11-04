@@ -47,12 +47,6 @@ const drawerItems = [
     path: "/",
     icon: () => <EmojiEventsIcon />
   },
-    {
-    id: '6',
-    title: "Фінали",
-    path: "/tournamentFinals",
-    icon: () => <EmojiEventsIcon />
-  }, 
   {
     id: '2',
     title: "Налаштування",
@@ -151,6 +145,7 @@ export default function Root() {
     >
       {pathname !== '/tournamentCategories'
       && pathname !== '/tournamentCompetitors'
+      && pathname !== '/tournamentResults'
       && pathname !== '/' && (
         <Toolbar />
       )}

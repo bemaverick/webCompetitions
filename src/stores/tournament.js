@@ -226,7 +226,7 @@ class TournamentStore {
     this.classificationCategories = [...this.classificationCategories, clasiffications];
   };
 
-  addCategory = ({weight, classification, hand }) => {
+  addCategory = ({ weight, classification, hand }) => {
     this.tournamentCategories = {
       ...this.tournamentCategories,
       [`${weight}_${classification}_${hand}`]: []
@@ -308,23 +308,26 @@ class TournamentStore {
 
     console.log(classification, Object.values(weightCategories), leftHand, rightHand, men, women)
     console.log("createdCategories", createdCategories)
-
   }
 
-  addCompetitor_OLD = ({ firstName, lastName, weight, category }) => {
-    const newCompetitor = {
-      firstName, 
-      lastName, 
-      weight, 
-      category,
-      id: uuidv4(),
-    }
-    this.competitorsList = [newCompetitor, ...this.competitorsList]
+  removeTournamentCategory = (tournamentCategoryId) => {
+    const updatedCompetitorsList = [];
+    this.competitorsList.map((competitor) => {
+      if (!competitor.tournamentCategoryIds.includes(tournamentCategoryId)) {
+        updatedCompetitorsList.push(competitor);
+      } else {
+        const updatedTournamentCategoryIds = competitor.tournamentCategoryIds.filter(id => id !== tournamentCategoryId);
+        if (updatedTournamentCategoryIds.length) {
+          updatedCompetitorsList.push({ ...competitor, tournamentCategoryIds: updatedTournamentCategoryIds});
+        }
+      }
+    });
+    this.competitorsList = updatedCompetitorsList; 
+    delete this.newTournamentCategories[tournamentCategoryId];
   }
+
 
   addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds }) => {
-    //const tournamentCategory = this.newTournamentCategories[tournamentCategoryId];
-   // console.log('newCompetitor',tournamentCategoryId, tournamentCategory );
 
     const newCompetitor = {
       tournamentCategoryIds,
@@ -336,13 +339,30 @@ class TournamentStore {
       weight, 
       id: uuidv4(),
     }
-
-    console.log('newCompetitor', toJS(newCompetitor));
     this.competitorsList = [newCompetitor, ...this.competitorsList];
   }
 
-  removeCompetitor = (competitorId) => {
+  removeCompetitorFromList = (competitorId) => {
     this.competitorsList = this.competitorsList.filter(({ id }) => id !== competitorId);
+  }
+
+  removeCompetitorFromCategory = (competitorId, tournamentCategoryId) => {
+    const competitorIndex = this.competitorsList.findIndex((competitor) => competitor.id === competitorId);
+    const updatedTournamentCategoryIds = this.competitorsList[competitorIndex].tournamentCategoryIds.filter((id) => id !== tournamentCategoryId);
+    if (!updatedTournamentCategoryIds.length) { //copmetitor was presented only in this category, should be removed
+      this.competitorsList = this.competitorsList.filter((competitor) => competitor.id !== competitorId);
+    } else { // competitor is presented in other categories, so tournamentCategoryIds should be updated;\
+      this.competitorsList = this.competitorsList.map((competitor) => {
+        if (competitorId === competitor.id) {
+          return { ...competitor, tournamentCategoryIds: updatedTournamentCategoryIds};
+        }
+        return competitor;
+      });
+    }
+  }
+
+  shuffleCategoryCompetitors = () => {
+    this.currentTable.rounds[0].groupA = _.shuffle(this.currentTable.rounds[0].groupA);
   }
 
   setTableCategory = (tableId, category) => {
@@ -501,9 +521,15 @@ class TournamentStore {
 
   postponeFinalForCategory = () => {
     const categoryId = this.currentTable.category;
+    const currentTableCopy = _.cloneDeep(this.currentTable);
+    const lastRoundIndex = currentTableCopy.selectedRound; //on this case selected round is last round, (user press pospone final)
+    currentTableCopy.rounds[lastRoundIndex].groupA.map((competitor) => {
+      competitor.stats[lastRoundIndex].result = 'idle';
+    })
+
     this.postponedFinals = {
       [categoryId]: {
-        ..._.cloneDeep(this.currentTable)
+        ...currentTableCopy
       },
       ...this.postponedFinals,
     };
@@ -513,6 +539,7 @@ class TournamentStore {
   startPostponedFinal = (currentTableIndex) => {
     const categoryHistory = this.postponedFinals[this.currentTable.category];
     this.tables[currentTableIndex] = _.cloneDeep(categoryHistory);
+    delete this.postponedFinals[this.currentTable.category];
   }
 
   get

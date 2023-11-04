@@ -5,6 +5,13 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
+const getMedalEmoji = (position) => {
+  if (position === 1) return '🥇';
+  if (position === 2) return '🥈';
+  if (position === 3) return '🥉'
+  return '';
+} 
+
 export const CompetitorRow = (props) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -24,6 +31,10 @@ export const CompetitorRow = (props) => {
     handleClose();
   }
 
+  const { moreButtonVisible = true, withEmoji = false} = props; 
+  const { columnSizes = [3, 3, 1, 5] } = props;
+
+
   return (
     <>
       <Menu
@@ -39,41 +50,45 @@ export const CompetitorRow = (props) => {
         <MenuItem onClick={onPressEdit}>Редагувати</MenuItem>
       </Menu>
       <Grid container columnSpacing={1} sx={{  pt:1, pb: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)'  }}>
-        <Grid item xs={3} sx={{ }}> 
+        <Grid item xs={columnSizes[0]} sx={{ }}> 
           <Typography variant="body1">
-            {props.position}. {props.lastName}
+            {withEmoji && getMedalEmoji(props.position)}{props.position}. {props.lastName}
           </Typography>
         </Grid>
-        <Grid item xs={3}> 
+        <Grid item xs={columnSizes[1]}> 
           <Typography variant="body1">
             {props.firstName}
           </Typography>
         </Grid>
-        <Grid item xs={1}> 
+        <Grid item xs={columnSizes[2]}> 
           <Typography variant="body1">
             {props.weight}
           </Typography>
         </Grid>
-        <Grid item xs={5}>
-          <div style={{ display: 'flex', }}>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1}}>
-              {props.categories.map((name) => (
-                <Typography key={name} textAlign={'center'} component="p" variant="body1">
-                  {name}
-                </Typography>  
-              ))}
+         {columnSizes[3] && (
+          <Grid item xs={columnSizes[3]}>
+            <div style={{ display: 'flex', }}>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1}}>
+                {props.categories.map((name) => (
+                  <Typography key={name} textAlign={'center'} component="p" variant="body1">
+                    {name}
+                  </Typography>  
+                ))}
+              </div>
+              {moreButtonVisible && (
+                <IconButton sx={{ my: -1 }} onClick={handleClick} aria-label="більше">
+                  <MoreVertIcon fontSize='small' />
+                </IconButton>
+              )}
             </div>
-            <IconButton sx={{ my: -1 }} onClick={handleClick} aria-label="більше">
-              <MoreVertIcon fontSize='small' />
-            </IconButton>
-          </div>
-        </Grid>
+          </Grid>
+         )}
+
       </Grid>
     </>
-  )
+  );
+};
 
-
-
-
+CompetitorRow.defaultProps = {
 
 }

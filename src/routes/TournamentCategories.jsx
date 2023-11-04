@@ -87,6 +87,7 @@ export default observer(function TournamentCategories() {
 
   return (
     <ThemeProvider theme={theme}>
+      
        <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
           <Toolbar />
           <Stack sx={{ flexGrow: 1, overflow: 'hidden', flexDirection: 'row'}}>
@@ -275,7 +276,7 @@ const CategoryDetailsView = observer((props) => {
     return filtered;
 
   }, [props.tournamentCategoryId, tournamentStore.competitorsList, searchQuery]);
-  console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
+  //console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
   
   return (
     <Stack sx={{ flex: 9, flexDirection: 'column', p: 2 }}>
@@ -316,10 +317,21 @@ const CategoryDetailsView = observer((props) => {
               categories={competitor.tournamentCategoryIds.map(
                 (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
                )}
+              onDelete={() => tournamentStore.removeCompetitorFromCategory(competitor.id, props.tournamentCategoryId)}
             />
           ))}
         </Stack>
       </Stack>
+      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1, width: '100%' }}>
+          <Button
+            color='error'
+            size='small'
+            variant='outlined'
+            onClick={() => tournamentStore.removeTournamentCategory(props.tournamentCategoryId)}
+            >
+              Видалити категорію
+          </Button>
+        </Box>
     </Stack>
   )
 })

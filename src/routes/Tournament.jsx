@@ -39,14 +39,8 @@ export default observer(function Tournament() {
   //   console.log('mount Tournament');
   //   return () => console.log('Unmount Tournament')
   // }, []);
-  const handleChange = (event, newValue) => {
+  const handleTabChange = (event, newValue) => {
     tournamentStore.setCurrentTableIndex(newValue);
-  };
-
-  const navigate = useNavigate();
-
-  const handleSubmit = async (event) => {
-    console.log(event)
   };
 
   return (
@@ -54,7 +48,11 @@ export default observer(function Tournament() {
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
         <Stack sx={{ p: 2, pt: 1, flexGrow: 1, flexDirection: 'column', border: '0px solid green', overflow: 'hidden'  }}>
-          <Tabs value={tournamentStore.currentTableIndex} onChange={handleChange} centered>
+          <Tabs
+            value={tournamentStore.currentTableIndex}
+            onChange={handleTabChange}
+            centered
+          >
             {Object.keys(tournamentStore.tables).map((table, index) => (
               <Tab key={index} label={`Стіл ${index + 1}`} />
             ))}
@@ -64,24 +62,17 @@ export default observer(function Tournament() {
       </Stack>
     </ThemeProvider>
   )
-  return (
-    <ThemeProvider theme={theme}>
-      <Container component="main" maxWidth="xm">
-        <BasicTabs />
-      </Container>
-    </ThemeProvider>
-  );
 });
 
 const TableContent = observer((props) => {
   const currentTableIndex = tournamentStore.currentTableIndex;
   const currentTable = tournamentStore.currentTable;
-  const currentTableState = currentTable.state; //idle, started, or finished;
-  const [resultShown, setShowResult] = React.useState();
+  const currentTableState = currentTable.state; // idle, started, or finished;
+  const isFinalsAvailable = !!Object.keys(tournamentStore.postponedFinals).length;
 
   if (currentTableState === 'idle') {
     return (
-      <Stack sx={{ flex: 1, pb: 4, justifyContent: 'center',  alignItems: 'center'}}>
+      <Stack sx={{ flex: 1, pb: 4, justifyContent: 'center',  alignItems: 'center' }}>
         <Box sx={{ width: '35%', display: 'flex', flexDirection: 'column',  alignItems: 'center' }}>
           <FormControl fullWidth>
             <InputLabel id="demo-simple-select-label">Оберіть категорію</InputLabel>
@@ -99,26 +90,30 @@ const TableContent = observer((props) => {
             <FormHelperText>Оберіть категорію, яка боротиметься за столом №{currentTableIndex + 1}</FormHelperText>
           </FormControl>
           <Button sx={{ mt: 2, mb: 3, }} onClick={() => tournamentStore.setTableStatus(currentTableIndex, 'started')} variant='outlined'>Розпочати боротьбу</Button>
-          <Box sx={{ width: '100%'}}>
-          <Divider orientation='horizontal' sx={{ width: '100%'}} textAlign='center' >Або</Divider>
-
-          </Box>
-          <FormControl fullWidth sx={{ mt: 3 }}>
-            <InputLabel id="demo-simple-select-label">Оберіть категорію</InputLabel>
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={tournamentStore.currentTable.category}
-              label="Оберіть категорію"
-              onChange={(event) => tournamentStore.setTableCategory(currentTableIndex, event.target.value)}
-            >
-              {Object.keys(tournamentStore.postponedFinals).map((categoryId) => (
-                <MenuItem key={categoryId} value={categoryId}>{tournamentStore.newTournamentCategories[categoryId].categoryTitleFull}</MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>Оберіть категорію, в якій відбудуться фінальні поєдинки за столом №{currentTableIndex + 1}</FormHelperText>
-          </FormControl>
-          <Button sx={{ mt: 2 }} onClick={() => tournamentStore.startPostponedFinal(currentTableIndex)} variant='outlined'>Розпочати фінали</Button>
+          
+          {isFinalsAvailable && (
+            <>
+              <Box sx={{ width: '100%'}}>
+                <Divider orientation='horizontal' sx={{ width: '100%'}} textAlign='center' >Або</Divider>
+              </Box>
+              <FormControl fullWidth sx={{ mt: 3 }}>
+                <InputLabel id="demo-simple-select-label">Оберіть категорію</InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={tournamentStore.currentTable.category}
+                  label="Оберіть категорію"
+                  onChange={(event) => tournamentStore.setTableCategory(currentTableIndex, event.target.value)}
+                >
+                  {Object.keys(tournamentStore.postponedFinals).map((categoryId) => (
+                    <MenuItem key={categoryId} value={categoryId}>{tournamentStore.newTournamentCategories[categoryId].categoryTitleFull}</MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>Оберіть категорію, в якій відбудуться фінальні поєдинки за столом №{currentTableIndex + 1}</FormHelperText>
+              </FormControl>
+              <Button sx={{ mt: 2 }} onClick={() => tournamentStore.startPostponedFinal(currentTableIndex)} variant='outlined'>Розпочати фінали</Button>
+            </>
+          )}
         </Box>
       </Stack>
     )
@@ -164,9 +159,9 @@ const TableContent = observer((props) => {
   }
   if (currentTableState === 'started') {
     const currentRoundIndex = tournamentStore.currentRoundIndex;
-    const isButtonVisible = currentRoundIndex ===  Object.keys(currentTable.rounds).length - 1; // if round finished, button not visible;
+    const nextRoundButtonVisible = currentRoundIndex === Object.keys(currentTable.rounds).length - 1; // if round finished, button not visible;
     const nonAllParCompleted = tournamentStore.currentGroupA.some(({ stats }) => stats[currentRoundIndex].result === 'idle')
-    ||  tournamentStore.currentGroupB.some(({ stats }) => stats[currentRoundIndex].result === 'idle');
+    || tournamentStore.currentGroupB.some(({ stats }) => stats[currentRoundIndex].result === 'idle');
     const isLastRound = tournamentStore.currentGroupA.length === 2 // kind of crunch
      && tournamentStore.currentGroupA.some(
       (competitor) => Object.values(competitor.stats).reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0) === 2
@@ -175,7 +170,6 @@ const TableContent = observer((props) => {
     const isSuperFinal = isFinal && tournamentStore.currentGroupA.every(
       (competitor) =>  {
         const prevRoundsStats = Object.values(competitor.stats).slice(0, -1);
-        console.log('Object.values(competitor.stats)', toJS(prevRoundsStats));
         return prevRoundsStats.reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0) === 1
       }
     )
@@ -183,7 +177,7 @@ const TableContent = observer((props) => {
 
     return (
       <>
-        <Breadcrumbs aria-label="breadcrumb">
+        <Breadcrumbs sx={{ pt: 1 }} aria-label="breadcrumb">
           {Object.keys(tournamentStore.currentTable.rounds).map((round) => (
             <Button key={`${round}`} size='small' variant="text" onClick={() => tournamentStore.setSelectedRoundIndex(parseInt(round))}>
               <Typography color={round == tournamentStore.currentRoundIndex ? 'green' : "text.primary"}>Раунд {parseInt(round) + 1}</Typography>
@@ -193,10 +187,10 @@ const TableContent = observer((props) => {
         <Stack sx={{ flexGrow: 1, border: '0px solid pink', overflow: 'scroll' }}>
           <Grid container justifyContent={'center'}>
             <Grid item xs={4} sx={{  }}>
-              <GroupA isFinal={isFinal} isSuperFinal={isSuperFinal} editable={isButtonVisible} />
-              <GroupB editable={isButtonVisible} />
+              <GroupA isFinal={isFinal} isSuperFinal={isSuperFinal} editable={nextRoundButtonVisible} />
+              <GroupB editable={nextRoundButtonVisible} />
               {postponeFinalButton && (
-                <Box sx={{ display: 'flex', pt: 2, justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
                   <Button
                     onClick={() => tournamentStore.postponeFinalForCategory()}
                     variant='contained'
@@ -205,8 +199,18 @@ const TableContent = observer((props) => {
                   </Button>
                 </Box>
               )}
-              {isButtonVisible && (
-                <Box sx={{ display: 'flex', pt: 2, justifyContent: 'center' }}>
+              {/* {currentRoundIndex === 0 && (
+                <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
+                  <Button
+                    onClick={() => tournamentStore.shuffleCategoryCompetitors()}
+                    variant='contained'
+                  >
+                    Змішати
+                  </Button>
+                </Box>
+              )} */}
+              {nextRoundButtonVisible && (
+                <Box sx={{ display: 'flex', pt: 0, justifyContent: 'center' }}>
                   <Button
                     onClick={() => tournamentStore.startNextRound()}
                     variant='contained'
@@ -258,7 +262,7 @@ const GroupB = observer((props) => {
     return null;
   }
   return (
-    <Card variant="outlined" sx={{ backgroundColor: 'transparent', p: 2, pb: 0, pt: 1 }}>
+    <Card variant="outlined" sx={{ backgroundColor: 'transparent', p: 2, pb: 0, mb: 2, pt: 1 }}>
       <Typography gutterBottom variant="h6" component="div">
         Нижня сітка
       </Typography>
