@@ -131,7 +131,20 @@ const CategoryDetailsView = observer((props) => {
               key={competitor.id}
               moreButtonVisible={false}
               position={index + 1}
-              columnSizes={[4,4,4]}
+              columnConfig={{
+                firstName: {
+                  visible: true,
+                  flex: 4
+                },
+                lastName: {
+                  visible: true,
+                  flex: 4
+                },
+                weight: {
+                  visible: true,
+                  flex: 4
+                },
+              }}
               firstName={competitor.firstName}
               lastName={competitor.lastName}
               weight={`${competitor.weight} ${tournamentStore.weightUnit.label}`}

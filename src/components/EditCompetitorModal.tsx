@@ -1,8 +1,9 @@
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
-import { Button, MenuItem, Modal, FormControl, Select, InputLabel, Box, OutlinedInput, Chip, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
+import { Button, MenuItem, Modal, FormControl, Select, InputLabel, Box, OutlinedInput, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
 
 import Typography from '@mui/material/Typography';
+
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
 import DoneIcon from '@mui/icons-material/Done';
@@ -17,6 +18,7 @@ type EditCompetitorModalProps = {
     weight: string;
     tournamentCategoryIds: string[];
     id: string;
+    present?: boolean;
   };
 }
 
@@ -25,8 +27,18 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
   const [firstName, setFirstName] = React.useState(props.competitor?.firstName);
   const [lastName, setLastName] = React.useState(props.competitor?.lastName);
   const [weight, setWeight] = React.useState(props.competitor?.weight);
-
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(props.competitor?.tournamentCategoryIds || []);
+  const [checkboxes, setCheckboxes] = React.useState({
+    present: !!props.competitor?.present,
+  });
+  const { present } = checkboxes;
+
+  const handleCheckboxChange = (event) => {
+    setCheckboxes({
+      ...checkboxes,
+      [event.target.name]: event.target.checked,
+    });
+  };
 
   const handleChange = (event) => {
     const {
@@ -45,12 +57,14 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
       lastName,
       weight,
       tournamentCategoryIds: selectedCategoryIds, 
-      id: props.competitor.id
+      id: props.competitor.id,
+      present: !!present
     });
     setFirstName('');
     setLastName('');
     setWeight('');
     setSelectedCategoryIds([]);
+    setCheckboxes({ present: false });
     props.onClose();
   }
 
@@ -92,7 +106,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               value={lastName}
             />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={5}>
             <FormControl size="small" fullWidth margin='normal'>
               <InputLabel id="demo-simple-select-label">Категорії</InputLabel>
               <Select
@@ -114,7 +128,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={2}>
+          <Grid item xs={1}>
             <TextField
               size='small'
               fullWidth
@@ -132,7 +146,13 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               value={weight}
             />
           </Grid>
+          <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
+            <Box sx={{ pt: 1, }}>
+              <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Присутній" />
+            </Box>
+          </Grid>
         </Grid>
+
         <Box sx={{ display: 'flex', justifyContent: 'center'}}>
           <Button
             sx={{ height: '40px', mt: 3, }}

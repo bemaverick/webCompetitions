@@ -57,7 +57,7 @@ const TableContent = observer((props) => {
   const currentTableIndex = tournamentStore.currentTableIndex;
   const currentTable = tournamentStore.currentTable;
   const currentTableState = currentTable.state; // idle, started, or finished;
-  const isFinalsAvailable = !!Object.keys(tournamentStore.postponedFinals).length;
+  const isFinalsAvailable = !!Object.keys(tournamentStore.postponedCategoriesProgress).length;
 
   if (currentTableState === 'idle') {
     return (
@@ -94,13 +94,13 @@ const TableContent = observer((props) => {
                   label="Оберіть категорію"
                   onChange={(event) => tournamentStore.setTableCategory(currentTableIndex, event.target.value)}
                 >
-                  {Object.keys(tournamentStore.postponedFinals).map((categoryId) => (
+                  {Object.keys(tournamentStore.postponedCategoriesProgress).map((categoryId) => (
                     <MenuItem key={categoryId} value={categoryId}>{tournamentStore.newTournamentCategories[categoryId].categoryTitleFull}</MenuItem>
                   ))}
                 </Select>
-                <FormHelperText>Оберіть категорію, в якій відбудуться фінальні поєдинки за столом №{currentTableIndex + 1}</FormHelperText>
+                <FormHelperText>Оберіть категорію, в якій продовжиться боротьба №{currentTableIndex + 1}</FormHelperText>
               </FormControl>
-              <Button sx={{ mt: 2 }} onClick={() => tournamentStore.startPostponedFinal(currentTableIndex)} variant='outlined'>Розпочати фінали</Button>
+              <Button sx={{ mt: 2 }} onClick={() => tournamentStore.startPostponedCategories(currentTableIndex)} variant='outlined'>Продовжити боротьбу</Button>
             </>
           )}
         </Box>
@@ -149,7 +149,7 @@ const TableContent = observer((props) => {
   if (currentTableState === 'started') {
     const currentRoundIndex = tournamentStore.currentRoundIndex;
     const nextRoundButtonVisible = currentRoundIndex === Object.keys(currentTable.rounds).length - 1; // if round finished, button not visible;
-    const nonAllParCompleted = tournamentStore.currentGroupA.some(({ stats }) => stats[currentRoundIndex].result === 'idle')
+    const notAllPairsCompleted = tournamentStore.currentGroupA.some(({ stats }) => stats[currentRoundIndex].result === 'idle')
     || tournamentStore.currentGroupB.some(({ stats }) => stats[currentRoundIndex].result === 'idle');
     const isLastRound = tournamentStore.currentGroupA.length === 2 // kind of crunch
      && tournamentStore.currentGroupA.some(
@@ -166,7 +166,7 @@ const TableContent = observer((props) => {
 
     return (
       <>
-        <Breadcrumbs sx={{ pt: 1 }} aria-label="breadcrumb">
+        <Breadcrumbs sx={{ py: 2, px: 1 }} aria-label="breadcrumb">
           {Object.keys(tournamentStore.currentTable.rounds).map((round) => (
             <Button key={`${round}`} size='small' variant="text" onClick={() => tournamentStore.setSelectedRoundIndex(parseInt(round))}>
               <Typography color={round == tournamentStore.currentRoundIndex ? 'green' : "text.primary"}>Раунд {parseInt(round) + 1}</Typography>
@@ -174,12 +174,19 @@ const TableContent = observer((props) => {
           ))}
         </Breadcrumbs>
 
-        <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden',   border: '0px solid pink',}}>
-          <Stack sx={{ flex: 4, justifyContent: 'center', alignItems: 'center', border: '0px solid black'}}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', pb: 2, alignItems: 'center', justifyContent: 'center' }}>
+        <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden' }}>
+          <Stack sx={{ flex: 4, justifyContent: 'center', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', pb: 2, px: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <Typography variant='h6' textAlign={'center'} pb={2}>
+                Категорія: {tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].categoryTitleFull}
+              </Typography>
               <Button
-                onClick={() => tournamentStore.postponeFinalForCategory()}
+                onClick={() => {
+                  tournamentStore.saveCategoryProgress();
+                  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
+                }}
                 variant='contained'
+                disabled={!nextRoundButtonVisible}
               >
                 Продовжити пізніше
                 {/* Провести фінал пізніше */}
@@ -190,23 +197,26 @@ const TableContent = observer((props) => {
 
             </Box>
           </Stack>
-          <Stack sx={{ flex: 4, pt: 2, flexDirection: 'column', border: '0px solid black',  overflow: 'scroll' }}>
+          <Stack sx={{ flex: 4, flexDirection: 'column', overflow: 'scroll' }}>
             <GroupA
               isFinal={isFinal}
               isSuperFinal={isSuperFinal}
               editable={nextRoundButtonVisible}
             />
             <GroupB editable={nextRoundButtonVisible} />
-            {postponeFinalButton && (
+            {/* {postponeFinalButton && (
               <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
                 <Button
-                  onClick={() => tournamentStore.postponeFinalForCategory()}
+                  onClick={() => {
+                    tournamentStore.saveCategoryProgress();
+                    tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
+                  }}
                   variant='contained'
                 >
                   Провести фінал пізніше
                 </Button>
               </Box>
-            )}
+            )} */}
             {/* {currentRoundIndex === 0 && (
               <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
                 <Button
@@ -222,20 +232,18 @@ const TableContent = observer((props) => {
                 <Button
                   onClick={() => tournamentStore.startNextRound()}
                   variant='contained'
-                  disabled={nonAllParCompleted}
+                  disabled={notAllPairsCompleted}
                 >
                   {isLastRound ? 'До результатів' : 'Наступний круг'}
                 </Button>
               </Box>
             )}
           </Stack>
-          <Stack sx={{ flex: 4, border: '0px solid black'}}>2</Stack>
+          <Stack sx={{ flex: 4, border: '0px solid black'}}></Stack>
         </Stack>
-
       </>
     )
   }
-
   return null;
 })
 

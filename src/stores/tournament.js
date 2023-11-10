@@ -63,7 +63,9 @@ const weightCategoriesDefault = [
   }, {
     id: '100+',
     value: '100+',
-    
+  }, {
+    id: 'xxx',
+    value: 'абсолютна',
   }
 ]
 
@@ -108,7 +110,7 @@ class TournamentStore {
           'newTournamentCategories',
           'competitorsList',
           'results',
-          'postponedFinals'
+          'postponedCategoriesProgress'
         ],
         storage: window.localStorage
       }
@@ -172,7 +174,7 @@ class TournamentStore {
 
   }
 
-  postponedFinals = {
+  postponedCategoriesProgress = {
 
   }
 
@@ -328,7 +330,7 @@ class TournamentStore {
   }
 
 
-  addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds }) => {
+  addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds, present }) => {
 
     const newCompetitor = {
       tournamentCategoryIds,
@@ -339,6 +341,7 @@ class TournamentStore {
       lastName, 
       weight, 
       id: uuidv4(),
+      present
     }
     this.competitorsList = [...this.competitorsList, newCompetitor];
   }
@@ -375,7 +378,6 @@ class TournamentStore {
   }
 
   setTableStatus = (tableId, state) => {
-    this.tables[tableId].state = state;
     if (state === 'started') {
       this.setupFirstRound(tableId);
     }
@@ -392,10 +394,13 @@ class TournamentStore {
         selectedRound: 0
       };
     }
+    this.tables[tableId].state = state;
   }
 
   setupFirstRound = () => {
-    const actualCategory = this.competitorsList.filter(({ tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category));
+    const actualCategory = this.competitorsList.filter(
+      ({ present, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && present
+    );
     const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: 'idle' }}}))
     this.currentTable.rounds[0].groupA = _.shuffle(groupA);
     this.currentTable.selectedRound = 0;
@@ -524,27 +529,27 @@ class TournamentStore {
     console.log(toJS(this.results))
   }
 
-  postponeFinalForCategory = () => {
+  saveCategoryProgress = () => {
     const categoryId = this.currentTable.category;
     const currentTableCopy = _.cloneDeep(this.currentTable);
     const lastRoundIndex = currentTableCopy.selectedRound; //on this case selected round is last round, (user press pospone final)
-    currentTableCopy.rounds[lastRoundIndex].groupA.map((competitor) => {
-      competitor.stats[lastRoundIndex].result = 'idle';
-    })
+    // currentTableCopy.rounds[lastRoundIndex].groupA.map((competitor) => {
+    //   competitor.stats[lastRoundIndex].result = 'idle';
+    // })
 
-    this.postponedFinals = {
+    this.postponedCategoriesProgress = {
       [categoryId]: {
         ...currentTableCopy
       },
-      ...this.postponedFinals,
+      ...this.postponedCategoriesProgress,
     };
     this.setTableStatus(this.currentTableIndex, 'idle');
   };
 
-  startPostponedFinal = (currentTableIndex) => {
-    const categoryHistory = this.postponedFinals[this.currentTable.category];
+  startPostponedCategories = (currentTableIndex) => {
+    const categoryHistory = this.postponedCategoriesProgress[this.currentTable.category];
     this.tables[currentTableIndex] = _.cloneDeep(categoryHistory);
-    delete this.postponedFinals[this.currentTable.category];
+    delete this.postponedCategoriesProgress[this.currentTable.category];
   }
 
   get

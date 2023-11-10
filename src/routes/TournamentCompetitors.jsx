@@ -5,11 +5,12 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormControl from '@mui/material/FormControl';
+import FormGroup from '@mui/material/FormGroup';
+
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import OutlinedInput from '@mui/material/OutlinedInput';
@@ -62,6 +63,17 @@ export default observer(function TournamentCompetitors() {
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(location.state?.tournamentCategoryId ? [location.state.tournamentCategoryId] : []);
   const [editModalVisble, setEditModalVisble] = React.useState(false);
   const [selectedCompetitor, setSelectedCompetitor] =  React.useState(null);
+  const [checkboxes, setCheckboxes] = React.useState({
+    present: false,
+  });
+  const { present } = checkboxes;
+
+  const handleCheckboxChange = (event) => {
+    setCheckboxes({
+      ...checkboxes,
+      [event.target.name]: event.target.checked,
+    });
+  };
 
 
   const navigate = useNavigate();
@@ -96,7 +108,7 @@ export default observer(function TournamentCompetitors() {
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
         <Stack sx={{  p: 2, flexGrow: 1, overflow: 'hidden' }}>
-          <Grid container spacing={1} sx={{ alignItems: 'top'}}>
+          <Grid container spacing={1} sx={{ alignItems: 'top' }}>
             <Grid item xs={1.5}>
               <TextField
                 fullWidth
@@ -127,7 +139,7 @@ export default observer(function TournamentCompetitors() {
                 value={lastName}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={5.5}>
               <FormControl size="small" fullWidth margin='normal'>
                 <InputLabel id="demo-simple-select-label">Категорії</InputLabel>
                 <Select
@@ -167,7 +179,12 @@ export default observer(function TournamentCompetitors() {
                 value={weight}
               />
             </Grid>
-            <Grid item xs={2}>
+            <Grid item xs={1.5} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
+              <Box sx={{ pt: 1, }}>
+                <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Присутній" />
+              </Box>
+            </Grid>
+            <Grid item xs={1}>
               <Button
                 sx={{ height: '40px', mt: 2 }}
                 //size='small'
@@ -179,13 +196,15 @@ export default observer(function TournamentCompetitors() {
                     lastName,
                     weight,
                     tournamentCategoryIds: selectedCategoryIds,
+                    present: checkboxes.present
                   });
                   setFirstName('');
                   setLastName('');
                   setWeight('');
                   setSelectedCategoryIds([]);
+                  setCheckboxes({ present: false })
                 }}  
-              >Додати учасника</Button>
+              >Додати</Button>
             </Grid>
           </Grid>
           <TextField
@@ -212,6 +231,7 @@ export default observer(function TournamentCompetitors() {
                 position={index + 1}
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
+                present={competitor.present}
                 weight={competitor.weight} 
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
