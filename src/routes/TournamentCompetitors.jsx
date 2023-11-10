@@ -5,11 +5,12 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormControl from '@mui/material/FormControl';
+import FormGroup from '@mui/material/FormGroup';
+
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import OutlinedInput from '@mui/material/OutlinedInput';
@@ -34,6 +35,7 @@ import { useNavigate, useLocation  } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
 import { CompetitorRow } from '../components/Competitor';
+import { EditCompetitorModal } from '../components/EditCompetitorModal';
 
 const theme = createTheme();
 
@@ -59,6 +61,20 @@ export default observer(function TournamentCompetitors() {
   const [category, setCategory] = React.useState('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(location.state?.tournamentCategoryId ? [location.state.tournamentCategoryId] : []);
+  const [editModalVisble, setEditModalVisble] = React.useState(false);
+  const [selectedCompetitor, setSelectedCompetitor] =  React.useState(null);
+  const [checkboxes, setCheckboxes] = React.useState({
+    present: false,
+  });
+  const { present } = checkboxes;
+
+  const handleCheckboxChange = (event) => {
+    setCheckboxes({
+      ...checkboxes,
+      [event.target.name]: event.target.checked,
+    });
+  };
+
 
   const navigate = useNavigate();
   console.log('tournamentCategoryId', location)
@@ -86,12 +102,13 @@ export default observer(function TournamentCompetitors() {
 
   }, [tournamentStore.competitorsList, searchQuery]);
 
+
   return (
     <ThemeProvider theme={theme}>
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
-        <Stack sx={{ flexDirection: 'column', p: 2, flexGrow: 1, overflow: 'hidden' }}>
-          <Grid container spacing={1} sx={{ alignItems: 'top'}}>
+        <Stack sx={{  p: 2, flexGrow: 1, overflow: 'hidden' }}>
+          <Grid container spacing={1} sx={{ alignItems: 'top' }}>
             <Grid item xs={1.5}>
               <TextField
                 fullWidth
@@ -122,7 +139,7 @@ export default observer(function TournamentCompetitors() {
                 value={lastName}
               />
             </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={5.5}>
               <FormControl size="small" fullWidth margin='normal'>
                 <InputLabel id="demo-simple-select-label">Категорії</InputLabel>
                 <Select
@@ -162,7 +179,12 @@ export default observer(function TournamentCompetitors() {
                 value={weight}
               />
             </Grid>
-            <Grid item xs={2}>
+            <Grid item xs={1.5} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
+              <Box sx={{ pt: 1, }}>
+                <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Присутній" />
+              </Box>
+            </Grid>
+            <Grid item xs={1}>
               <Button
                 sx={{ height: '40px', mt: 2 }}
                 //size='small'
@@ -174,13 +196,15 @@ export default observer(function TournamentCompetitors() {
                     lastName,
                     weight,
                     tournamentCategoryIds: selectedCategoryIds,
+                    present: checkboxes.present
                   });
                   setFirstName('');
                   setLastName('');
                   setWeight('');
                   setSelectedCategoryIds([]);
+                  setCheckboxes({ present: false })
                 }}  
-              >Додати учасника</Button>
+              >Додати</Button>
             </Grid>
           </Grid>
           <TextField
@@ -198,11 +222,16 @@ export default observer(function TournamentCompetitors() {
           <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
             {сompetitorsList.map((competitor, index) => (
               <CompetitorRow
-                onDelete={() => tournamentStore.removeCompetitor(competitor.id)}
+                onEdit={() => {
+                  setEditModalVisble(true);
+                  setSelectedCompetitor(competitor);
+                }}
+                onDelete={() => tournamentStore.removeCompetitorFromList(competitor.id)}
                 key={competitor.id}
                 position={index + 1}
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
+                present={competitor.present}
                 weight={competitor.weight} 
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
@@ -213,128 +242,16 @@ export default observer(function TournamentCompetitors() {
         </Stack>
 
       </Stack>
-
+      <EditCompetitorModal
+        key={selectedCompetitor?.id}
+        onEdit={(editedCompetitor) => tournamentStore.editCompetitor(editedCompetitor)}
+        onClose={() => {
+          setEditModalVisble(false);
+          setSelectedCompetitor(null);
+        }}
+        competitor={selectedCompetitor}
+        modalVisible={editModalVisble}
+      />             
     </ThemeProvider>
   )
-
-
-  return (
-    <ThemeProvider theme={theme}>
-      <Container component="main" maxWidth="xm">
-        <Box
-          sx={{
-            marginTop: 8,
-
-          }}
-        >
-          <h4>Всі учасники</h4>
-
-      
-          <TextField
-            onChange={(event) => {
-              setLastName(event.target.value);
-            }}
-            margin="normal"
-            id="outlined-basic"
-            label="Прізвище"
-            variant="outlined"
-            value={lastName}
-          />
-          <TextField
-            onChange={(event) => {
-              setFirstName(event.target.value);
-            }}
-            margin="normal"
-            id="outlined-basic"
-            label="Ім'я"
-            variant="outlined"
-            value={firstName}
-
-          />
-          <TextField
-            onChange={(event) => {
-              setWeight(event.target.value);
-            }}
-            margin="normal"
-            id="outlined-basic"
-            label="Вага учасника"
-            variant="outlined"
-            value={weight}
-          />
-          <InputLabel id="demo-simple-select-label">Категорія</InputLabel>
-          <Select
-            labelId="demo-simple-select-label"
-            id="demo-simple-select"
-            value={category}
-            label="Категорія"
-            onChange={(event) => setCategory(event.target.value)}
-          >
-            {Object.keys(tournamentStore.tournamentCategories).map((category) => (
-              <MenuItem value={category}>{category}</MenuItem>
-            ))}
-          </Select>
-          <FormHelperText>Оберіть категорію для участі</FormHelperText>
-          <Button
-            variant='outlined'
-            onClick={() => {
-              tournamentStore.addCompetitor_OLD({ 
-                firstName, lastName, weight, category
-              });
-              setFirstName('');
-              setLastName('');
-              setWeight('');
-              setCategory('');
-            }}  
-          >Додати учасника</Button>
-        </Box>
-
-        <BasicTable data={tournamentStore.competitorsList} />
-      </Container>
-    </ThemeProvider>
-  );
-})
-
-
-function createData(name, calories, fat, carbs, protein) {
-  return { name, calories, fat, carbs, protein };
-}
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];
-
-function BasicTable(props) {
-  return (
-    <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }} aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell>Прізвище</TableCell>
-            <TableCell align="right">Ім'я</TableCell>
-            <TableCell align="right">Вага</TableCell>
-            <TableCell align="right">Категорія</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {props.data.map((row) => (
-            <TableRow
-              key={row.id}
-              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-            >
-              <TableCell component="th" scope="row">
-                {row.lastName}
-              </TableCell>
-              <TableCell align="right">{row.firstName}</TableCell>
-              <TableCell align="right">{row.weight}</TableCell>
-              <TableCell align="right">{row.category}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-}
+});

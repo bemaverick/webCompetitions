@@ -23,6 +23,7 @@ import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
 import CategoryIcon from '@mui/icons-material/Category';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import logo from '../assets/logo_white.jpeg';
 
 
 export async function action() {
@@ -47,12 +48,6 @@ const drawerItems = [
     path: "/",
     icon: () => <EmojiEventsIcon />
   },
-    {
-    id: '6',
-    title: "Фінали",
-    path: "/tournamentFinals",
-    icon: () => <EmojiEventsIcon />
-  }, 
   {
     id: '2',
     title: "Налаштування",
@@ -96,6 +91,7 @@ export default function Root() {
           <Typography variant="h6" noWrap component="div">
             {appBarTitle}
           </Typography>
+
         </Toolbar>
       </AppBar>
     <Drawer
@@ -110,7 +106,25 @@ export default function Root() {
       variant="permanent"
       anchor="left"
     >
-      <Toolbar />
+      <Toolbar>
+        <Box
+          component="img"
+          sx={{
+            my: 1,
+            ml: -1,
+            height: 48,
+            width: 48,
+            // maxHeight: { xs: 233, md: 167 },
+            // maxWidth: { xs: 350, md: 250 },
+          }}
+          alt="The house from the offer."
+          src={logo}
+        />
+        <Typography variant="h5" noWrap component="div">
+          ARM GRID
+        </Typography>
+
+      </Toolbar>
       <Divider />
       <List>
         {drawerItems.map((item, index) => (
@@ -151,6 +165,7 @@ export default function Root() {
     >
       {pathname !== '/tournamentCategories'
       && pathname !== '/tournamentCompetitors'
+      && pathname !== '/tournamentResults'
       && pathname !== '/' && (
         <Toolbar />
       )}
@@ -158,18 +173,4 @@ export default function Root() {
     </Box>
   </Box>
   )
-  
- // const navigation = useNavigation();
-  return (
-    <Box sx={{ display: 'flex', border: '2px solid green' }}>
-      {OldDrawer}
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3, border: '2px solid blue' }}
-      >
-        <Outlet />
-      </Box>
-
-    </Box>
-  );
 }

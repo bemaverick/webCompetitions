@@ -208,7 +208,7 @@ export default observer(function TournamentSettings() {
                 }}
                 component="ul"
               >
-                <FormControl sx={{ m: 0, width: '15ch',  pr: 2 }} variant="outlined">
+                <FormControl sx={{ m: 0, width: '20ch',  pr: 2 }} variant="outlined">
                   <OutlinedInput
                     size='small'
                     sx={{
@@ -238,8 +238,8 @@ export default observer(function TournamentSettings() {
                       <Chip
                         color="primary" 
                         sx={{ mb: 1 }}
-                        label={`${category.value} ${weightUnitLabel}`}
-                        onDelete={(!index && weightCategories.length === 1) ? undefined : () => onDeleteWeightCategory(category.id)}
+                        label={category.id === 'xxx' ? category.id === 'xxx' : `${category.value} ${weightUnitLabel}`}
+                        onDelete={(weightCategories.length === 1 || category.id === 'xxx') ? undefined : () => onDeleteWeightCategory(category.id)}
                       />
                     </ListItem>
                   );
@@ -262,7 +262,7 @@ export default observer(function TournamentSettings() {
                 }}
                 component="ul"
               >
-                <FormControl sx={{ m: 0, width: '15ch', pr: 2 }} variant="outlined">
+                <FormControl sx={{ m: 0, width: '20ch', pr: 2 }} variant="outlined">
                   <TextField
                     id="outlined-basic"
                     placeholder='Створити'
@@ -270,7 +270,7 @@ export default observer(function TournamentSettings() {
                     size='small'
                     value={classification}
                     onChange={(event) => {
-                      setClassification(_.trim(event.target.value));
+                      setClassification(event.target.value);
                      }}
                      onKeyDown={onAddClassification}
                   />
@@ -294,7 +294,7 @@ export default observer(function TournamentSettings() {
                         color="secondary" 
                         sx={{ mb: 1 }}
                         label={classification.label}
-                        onDelete={(!index && classificationCategories.length === 1) ? undefined : () => onDeleteClassification(classification.id)}
+                        onDelete={(classificationCategories.length === 1) ? undefined : () => onDeleteClassification(classification.id)}
                       />
                     </ListItem>
                   );
