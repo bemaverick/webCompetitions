@@ -238,7 +238,7 @@ export default observer(function TournamentSettings() {
                       <Chip
                         color="primary" 
                         sx={{ mb: 1 }}
-                        label={category.id === 'xxx' ? category.id === 'xxx' : `${category.value} ${weightUnitLabel}`}
+                        label={category.id === 'xxx' ? category.value: `${category.value} ${weightUnitLabel}`}
                         onDelete={(weightCategories.length === 1 || category.id === 'xxx') ? undefined : () => onDeleteWeightCategory(category.id)}
                       />
                     </ListItem>

@@ -444,7 +444,8 @@ const ModalForCategories = observer((props) => {
                 sx={{ mb: 1 }}
                 key={weightCategory.id}
                 color={isSelected ? 'success' : 'default'}
-                label={`${weightCategory.value} ${weightUnitLabel}`}
+               // label={`${weightCategory.value} ${weightUnitLabel}`}
+                label={weightCategory.id === 'xxx' ? weightCategory.value: `${weightCategory.value} ${weightUnitLabel}`}
                 onClick={() => selectWeightCategory(weightCategory)}
                 deleteIcon={isSelected ? <DoneIcon /> : undefined}
                 onDelete={isSelected ? () => selectWeightCategory(weightCategory) : undefined}

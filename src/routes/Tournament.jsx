@@ -186,7 +186,7 @@ const TableContent = observer((props) => {
                   tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
                 }}
                 variant='contained'
-                disabled={!nextRoundButtonVisible}
+                disabled={!nextRoundButtonVisible || isLastRound}
               >
                 Продовжити пізніше
                 {/* Провести фінал пізніше */}

@@ -343,7 +343,7 @@ class TournamentStore {
       id: uuidv4(),
       present
     }
-    this.competitorsList = [...this.competitorsList, newCompetitor];
+    this.competitorsList = [newCompetitor, ...this.competitorsList];
   }
 
   editCompetitor = (editedCompetitor) => {
@@ -473,7 +473,7 @@ class TournamentStore {
     });
 
     //COMPETITOR FROM B MOVES TO FINAL
-    if (newRoundGroupB.length === 1) {
+    if (newRoundGroupB.length === 1 && newRoundGroupA.length === 1) {
       newRoundGroupA.push(_.cloneDeep(newRoundGroupB[0]));
       newRoundGroupB = [];
     } 
@@ -593,5 +593,5 @@ class TournamentStore {
 export const tournamentStore = new TournamentStore();
 
 autorun(() => {
-  console.log("Energy level:", tournamentStore)
+  //console.log("Energy level:", tournamentStore)
 })
