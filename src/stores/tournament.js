@@ -10,7 +10,8 @@ const FAKE_tournamentCategories = {
   '90_man_right': [],
   '110_man_left': [],
   '110_man_right': [],
-}
+};
+
 const FAKE_competitorsList = [
   { firstName: 'Сергій', lastName: 'Іванчук', weight: '88', category: '90_man_left', id: '1'},
   { firstName: 'Рустам', lastName: 'Стерненко', weight: '88', category: '90_man_left', id: '2'},
@@ -339,7 +340,11 @@ class TournamentStore {
       weight, 
       id: uuidv4(),
     }
-    this.competitorsList = [newCompetitor, ...this.competitorsList];
+    this.competitorsList = [...this.competitorsList, newCompetitor];
+  }
+
+  editCompetitor = (editedCompetitor) => {
+    this.competitorsList = this.competitorsList.map((competitor) => editedCompetitor.id === competitor.id ? editedCompetitor : competitor);
   }
 
   removeCompetitorFromList = (competitorId) => {

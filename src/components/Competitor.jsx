@@ -29,6 +29,7 @@ export const CompetitorRow = (props) => {
 
   const onPressEdit = () => {
     handleClose();
+    props.onEdit();
   }
 
   const { moreButtonVisible = true, withEmoji = false} = props; 
@@ -46,8 +47,8 @@ export const CompetitorRow = (props) => {
           'aria-labelledby': 'basic-button',
         }}
       >
-        <MenuItem onClick={onPressDelete}>Видалити</MenuItem>
         <MenuItem onClick={onPressEdit}>Редагувати</MenuItem>
+        <MenuItem onClick={onPressDelete}>Видалити</MenuItem>
       </Menu>
       <Grid container columnSpacing={1} sx={{  pt:1, pb: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)'  }}>
         <Grid item xs={columnSizes[0]} sx={{ }}> 

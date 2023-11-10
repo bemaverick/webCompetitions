@@ -4,7 +4,6 @@ import Tab from '@mui/material/Tab';
 import PropTypes from 'prop-types';
 import Tabs from '@mui/material/Tabs';
 import Button from '@mui/material/Button';
-import CssBaseline from '@mui/material/CssBaseline';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
@@ -14,16 +13,12 @@ import { Grid, Stack, Toolbar, FormHelperText, Card, CardContent, Chip  } from '
 import { styled } from "@mui/material/styles";
 import List from '@mui/material/List';
 import ListItemText from '@mui/material/ListItemText';
-
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import Checkbox from '@mui/material/Checkbox';
-
-
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
-
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,10 +30,6 @@ import { toJS  } from 'mobx';
 const theme = createTheme();
 
 export default observer(function Tournament() {
-  // React.useEffect(() => {
-  //   console.log('mount Tournament');
-  //   return () => console.log('Unmount Tournament')
-  // }, []);
   const handleTabChange = (event, newValue) => {
     tournamentStore.setCurrentTableIndex(newValue);
   };
@@ -47,18 +38,16 @@ export default observer(function Tournament() {
     <ThemeProvider theme={theme}>
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
-        <Stack sx={{ p: 2, pt: 1, flexGrow: 1, flexDirection: 'column', border: '0px solid green', overflow: 'hidden'  }}>
-          <Tabs
-            value={tournamentStore.currentTableIndex}
-            onChange={handleTabChange}
-            centered
-          >
-            {Object.keys(tournamentStore.tables).map((table, index) => (
-              <Tab key={index} label={`Стіл ${index + 1}`} />
-            ))}
-          </Tabs>
-          <TableContent />
-        </Stack>
+        <Tabs
+          value={tournamentStore.currentTableIndex}
+          onChange={handleTabChange}
+          centered
+        >
+          {Object.keys(tournamentStore.tables).map((table, index) => (
+            <Tab key={index} label={`Стіл ${index + 1}`} />
+          ))}
+        </Tabs>
+        <TableContent />
       </Stack>
     </ThemeProvider>
   )
@@ -129,7 +118,7 @@ const TableContent = observer((props) => {
                   onClick={() => tournamentStore.setTableStatus(currentTableIndex, 'idle')}
                   type='outlined'
                 >
-                  Розпочати нову категрію
+                  Розпочати нову категорію
                 </Button>
               </Box>
               <Typography
@@ -184,47 +173,65 @@ const TableContent = observer((props) => {
             </Button>
           ))}
         </Breadcrumbs>
-        <Stack sx={{ flexGrow: 1, border: '0px solid pink', overflow: 'scroll' }}>
-          <Grid container justifyContent={'center'}>
-            <Grid item xs={4} sx={{  }}>
-              <GroupA isFinal={isFinal} isSuperFinal={isSuperFinal} editable={nextRoundButtonVisible} />
-              <GroupB editable={nextRoundButtonVisible} />
-              {postponeFinalButton && (
-                <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
-                  <Button
-                    onClick={() => tournamentStore.postponeFinalForCategory()}
-                    variant='contained'
-                  >
-                    Провести фінал пізніше
-                  </Button>
-                </Box>
-              )}
-              {/* {currentRoundIndex === 0 && (
-                <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
-                  <Button
-                    onClick={() => tournamentStore.shuffleCategoryCompetitors()}
-                    variant='contained'
-                  >
-                    Змішати
-                  </Button>
-                </Box>
-              )} */}
-              {nextRoundButtonVisible && (
-                <Box sx={{ display: 'flex', pt: 0, justifyContent: 'center' }}>
-                  <Button
-                    onClick={() => tournamentStore.startNextRound()}
-                    variant='contained'
-                    disabled={nonAllParCompleted}
-                  >
-                    {isLastRound ? 'До результатів' : 'Наступний круг'}
-                  </Button>
-                </Box>
-              )}
-      
 
-            </Grid>
-          </Grid>
+        <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden',   border: '0px solid pink',}}>
+          <Stack sx={{ flex: 4, justifyContent: 'center', alignItems: 'center', border: '0px solid black'}}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', pb: 2, alignItems: 'center', justifyContent: 'center' }}>
+              <Button
+                onClick={() => tournamentStore.postponeFinalForCategory()}
+                variant='contained'
+              >
+                Продовжити пізніше
+                {/* Провести фінал пізніше */}
+              </Button>
+              <Typography variant='body2' textAlign={'center'} pt={2} color='#696969db'>
+                Зберегти поточні результати і розпочати нову категорію
+              </Typography>
+
+            </Box>
+          </Stack>
+          <Stack sx={{ flex: 4, pt: 2, flexDirection: 'column', border: '0px solid black',  overflow: 'scroll' }}>
+            <GroupA
+              isFinal={isFinal}
+              isSuperFinal={isSuperFinal}
+              editable={nextRoundButtonVisible}
+            />
+            <GroupB editable={nextRoundButtonVisible} />
+            {postponeFinalButton && (
+              <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
+                <Button
+                  onClick={() => tournamentStore.postponeFinalForCategory()}
+                  variant='contained'
+                >
+                  Провести фінал пізніше
+                </Button>
+              </Box>
+            )}
+            {/* {currentRoundIndex === 0 && (
+              <Box sx={{ display: 'flex', pb: 2, justifyContent: 'center' }}>
+                <Button
+                  onClick={() => tournamentStore.shuffleCategoryCompetitors()}
+                  variant='contained'
+                >
+                  Змішати
+                </Button>
+              </Box>
+            )} */}
+            {nextRoundButtonVisible && (
+              <Box sx={{ display: 'flex', p: 2, justifyContent: 'center' }}>
+                <Button
+                  onClick={() => tournamentStore.startNextRound()}
+                  variant='contained'
+                  disabled={nonAllParCompleted}
+                >
+                  {isLastRound ? 'До результатів' : 'Наступний круг'}
+                </Button>
+              </Box>
+            )}
+          </Stack>
+          <Stack sx={{ flex: 4, border: '0px solid black'}}>2</Stack>
         </Stack>
+
       </>
     )
   }
@@ -238,22 +245,30 @@ const GroupA = observer((props) => {
     groupTitle = 'Супер фінал';
   }
   return (
-    <Card variant="outlined" sx={{ backgroundColor: 'transparent', p: 2, pb: 0, pt: 1, mb: 2, mt: 1 }}>
+    <Stack borderRadius={2} sx={{ backgroundColor: 'transparent', p: 2, mb: 0, border: '2px solid #a0a0a0', }}>
       <Typography gutterBottom variant="h6" component="div">
         {groupTitle}
       </Typography>
-      {tournamentStore.currentGroupAChunked.map(([competitor1, competitor2]) => (
-        <Pair
-          editable={props.editable}
-          key={competitor1.id}
-          group='groupA'
-          firstCompetitor={competitor1}
-          secondCompetitor={competitor2}
-          isFirstChecked={competitor1.stats[tournamentStore.currentRoundIndex].result === "win"}
-          isSecondChecked={competitor2?.stats[tournamentStore.currentRoundIndex].result === "win"}
-        />
-      ))}
-    </Card>
+      {tournamentStore.currentGroupAChunked.map(([competitor1, competitor2], index) => {
+        const currentPairIndex = tournamentStore.currentGroupAChunked.findIndex(
+          ([competitor1, _]) => competitor1.stats[tournamentStore.currentRoundIndex].result === 'idle'
+        );
+        return (
+          (
+            <Pair
+              currentPair={currentPairIndex === index}
+              editable={props.editable}
+              key={competitor1.id}
+              group='groupA'
+              firstCompetitor={competitor1}
+              secondCompetitor={competitor2}
+              isFirstChecked={competitor1.stats[tournamentStore.currentRoundIndex].result === "win"}
+              isSecondChecked={competitor2?.stats[tournamentStore.currentRoundIndex].result === "win"}
+            />
+          )
+        )
+      })}
+    </Stack>
   )
 });
 
@@ -262,22 +277,33 @@ const GroupB = observer((props) => {
     return null;
   }
   return (
-    <Card variant="outlined" sx={{ backgroundColor: 'transparent', p: 2, pb: 0, mb: 2, pt: 1 }}>
+    <Stack borderRadius={2} sx={{ backgroundColor: 'transparent', p: 2, mt: 4, border: '2px solid #a0a0a0', }}>
       <Typography gutterBottom variant="h6" component="div">
         Нижня сітка
       </Typography>
-      {tournamentStore.currentGroupBChunked.map(([competitor1, competitor2]) => (
-        <Pair
-          editable={props.editable}
-          key={competitor1.id}
-          group='groupB'
-          firstCompetitor={competitor1}
-          secondCompetitor={competitor2}
-          isFirstChecked={competitor1.stats[tournamentStore.currentRoundIndex].result === "win"}
-          isSecondChecked={competitor2?.stats[tournamentStore.currentRoundIndex].result === "win"}
-        />
-      ))}
-    </Card>
+      {tournamentStore.currentGroupBChunked.map(([competitor1, competitor2], index) => {
+        let currentPairIndex = tournamentStore.currentGroupBChunked.findIndex(
+          ([competitor1, _]) => competitor1.stats[tournamentStore.currentRoundIndex].result === 'idle'
+        );
+        if (tournamentStore.currentGroupA.some((competitor) => competitor.stats[tournamentStore.currentRoundIndex].result === 'idle')) {
+          currentPairIndex = -1;
+        }
+        return (
+          (
+            <Pair
+              currentPair={currentPairIndex === index}
+              editable={props.editable}
+              key={competitor1.id}
+              group='groupB'
+              firstCompetitor={competitor1}
+              secondCompetitor={competitor2}
+              isFirstChecked={competitor1.stats[tournamentStore.currentRoundIndex].result === "win"}
+              isSecondChecked={competitor2?.stats[tournamentStore.currentRoundIndex].result === "win"}
+            />
+          )
+        )
+      })}
+    </Stack>
   )
 })
 
@@ -286,66 +312,89 @@ const Pair = (props) => {
   return (
     <Box
       sx={{
-        mb: 2,
-        display: 'flex',
-        flexDirection: 'column',
-      // bgcolor: 'warning.light',
-        bgcolor: 'white',
+        mb: 0,
+        p: 2,
         borderRadius: 2,
-        boxShadow: 2,
+        border: props.currentPair ? '2px solid green' : undefined,
       }}
     >
-      <Button
-        disabled={!props.editable}
+      {props.currentPair && (
+        <Typography
+          //textAlign={'center'}
+          mt={-1}
+          component="p"
+          variant="subtitle2"
+          gutterBottom
+        >
+        Поточна пара
+      </Typography> 
+      )}
+
+      <Box
         sx={{
-          ':hover': {
-            bgcolor: '#81c784', // theme.palette.primary.main
-           // color: 'white',
-          },
-          color: 'text.primary',
-          bgcolor: props.isFirstChecked ? '#81c784' : undefined,
-          borderBottomLeftRadius: 0,
-          borderBottomRightRadius: 0
-      }}
-        onClick={() => tournamentStore.markWinner(props.firstCompetitor.id, props.group)}
+          m: 0,
+          p: 0,
+          display: 'flex',
+          flexDirection: 'column',
+        // bgcolor: 'warning.light',
+          bgcolor: 'white',
+          boxShadow: 2,
+          borderRadius: 2,
+
+        }}
       >
-        {props.firstCompetitor.lastName} {props.firstCompetitor.firstName}
-      </Button>
-      <Divider />
-      {props.secondCompetitor ? (
         <Button
           disabled={!props.editable}
           sx={{
             ':hover': {
               bgcolor: '#81c784', // theme.palette.primary.main
-             // color: 'white',
+            // color: 'white',
             },
             color: 'text.primary',
-            bgcolor: props.isSecondChecked ? '#81c784' : undefined,
-            borderTopLeftRadius: 0,
-            borderTopRightRadius: 0
-          }}
-          onClick={() => tournamentStore.markWinner(props.secondCompetitor.id, props.group)}
+            bgcolor: props.isFirstChecked ? '#81c784' : undefined,
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0
+        }}
+          onClick={() => tournamentStore.markWinner(props.firstCompetitor.id, props.group)}
         >
-          {props.secondCompetitor.lastName} {props.secondCompetitor.firstName}
-        </Button>) : (
+          {props.firstCompetitor.lastName} {props.firstCompetitor.firstName}
+        </Button>
+        <Divider />
+        {props.secondCompetitor ? (
           <Button
-            disabled={true}
+            disabled={!props.editable}
             sx={{
-              // ':hover': {
-              //   bgcolor: '#81c784', // theme.palette.primary.main
-              // // color: 'white',
-              // },
+              ':hover': {
+                bgcolor: '#81c784', // theme.palette.primary.main
+              // color: 'white',
+              },
               color: 'text.primary',
-           //   bgcolor: undefined,
+              bgcolor: props.isSecondChecked ? '#81c784' : undefined,
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0
             }}
-            //onClick={() => tournamentStore.markWinner(props.secondCompetitor.id, props.group)}
+            onClick={() => tournamentStore.markWinner(props.secondCompetitor.id, props.group)}
           >
-            Без суперника
-          </Button>)
-      }
+            {props.secondCompetitor.lastName} {props.secondCompetitor.firstName}
+          </Button>) : (
+            <Button
+              disabled={true}
+              sx={{
+                // ':hover': {
+                //   bgcolor: '#81c784', // theme.palette.primary.main
+                // // color: 'white',
+                // },
+                color: 'text.primary',
+            //   bgcolor: undefined,
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 0
+              }}
+              //onClick={() => tournamentStore.markWinner(props.secondCompetitor.id, props.group)}
+            >
+              Без суперника
+            </Button>)
+        }
+      </Box>
     </Box>
   )
 }

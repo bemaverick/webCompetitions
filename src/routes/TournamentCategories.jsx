@@ -27,6 +27,7 @@ import _ from 'lodash';
 import Toolbar from '@mui/material/Toolbar';
 import { toJS } from 'mobx';
 import { CompetitorRow } from '../components/Competitor';
+import { EditCompetitorModal } from '../components/EditCompetitorModal';
 
 
 const theme = createTheme();
@@ -47,11 +48,6 @@ export default observer(function TournamentCategories() {
   const [currentCategoryId, setCurrentCategoryId] = React.useState(
     Object.keys(tournamentStore.newTournamentCategories)[0] || ''
   );
-
-  const navigate = useNavigate();
-
-  const handleSubmit = async (event) => {
-  };
 
   const isTournamentCategoriesListEmpty = Object.keys(tournamentStore.newTournamentCategories).length === 0;
 
@@ -87,52 +83,51 @@ export default observer(function TournamentCategories() {
 
   return (
     <ThemeProvider theme={theme}>
-      
-       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
-          <Toolbar />
-          <Stack sx={{ flexGrow: 1, overflow: 'hidden', flexDirection: 'row'}}>
-            <Stack sx={{ flex: 2, overflow: 'scroll', p: 2, pt: 0 }}>
-              <List
-                sx={{ pt: 0}}
-                dense={true}
-              >
-                <ListSubheader
-                  disableGutters
-                  sx={{ display: 'flex', pt: 0, backgroundColor: '#fafafa', justifyContent: 'center', borderBottom: '2px solid #ddd', }}>
-                  <Button
-                    
-                    sx={{ mt: 2, mb: 2 }}
-                    onClick={() => setCreatingCategoryModal(true)}
-                    color="primary"
-                    size="small"
-                    variant="contained"
-                  >
-                    Створити категорію
-                  </Button>
-                </ListSubheader>
-                {Object.values(tournamentStore.newTournamentCategories).map((category) => (
-                  <CategoryItem
-                    onClick={() => setCurrentCategoryId(category.id)}
-                    selected={currentCategoryId === category.id}
-                    key={category.id}
-                    id={category.id}
-                    title={category.categoryTitleShort}
-                    subTitle={`${_.upperFirst(genderTranslations[category.config.gender])}, ${handTranslations[category.config.hand]}`}
-                  />
-                ))}
-              </List>
-            </Stack>
-            <Divider orientation='vertical'></Divider>
-            <CategoryDetailsView
-              tournamentCategoryId={currentCategoryId}
-            />
+      <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
+        <Toolbar />
+        <Stack sx={{ flexGrow: 1, overflow: 'hidden', flexDirection: 'row'}}>
+          <Stack sx={{ flex: 2, overflow: 'scroll', p: 2, pt: 0 }}>
+            <List
+              sx={{ pt: 0}}
+              dense={true}
+            >
+              <ListSubheader
+                disableGutters
+                sx={{ display: 'flex', pt: 0, backgroundColor: '#fafafa', justifyContent: 'center', borderBottom: '2px solid #ddd', }}>
+                <Button
+                  
+                  sx={{ mt: 2, mb: 2 }}
+                  onClick={() => setCreatingCategoryModal(true)}
+                  color="primary"
+                  size="small"
+                  variant="contained"
+                >
+                  Створити категорію
+                </Button>
+              </ListSubheader>
+              {Object.values(tournamentStore.newTournamentCategories).map((category) => (
+                <CategoryItem
+                  onClick={() => setCurrentCategoryId(category.id)}
+                  selected={currentCategoryId === category.id}
+                  key={category.id}
+                  id={category.id}
+                  title={category.categoryTitleShort}
+                  subTitle={`${_.upperFirst(genderTranslations[category.config.gender])}, ${handTranslations[category.config.hand]}`}
+                />
+              ))}
+            </List>
           </Stack>
-       </Stack>
-       <ModalForCategories
+          <Divider orientation='vertical'></Divider>
+          <CategoryDetailsView
+            tournamentCategoryId={currentCategoryId}
+          />
+        </Stack>
+      </Stack>
+      <ModalForCategories
         modalVisible={creatingCategoryModal}
         onClose={() => setCreatingCategoryModal(false)}
         setCurrentCategory={(id) => setCurrentCategoryId(id)}
-      />
+      />    
     </ThemeProvider>
   )
 
@@ -253,9 +248,8 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
 
 const CategoryDetailsView = observer((props) => {
   const currentTournamentCategory = tournamentStore.newTournamentCategories[props.tournamentCategoryId];
-  const [firstName, setFirstName] = React.useState('');
-  const [lastName, setLastName] = React.useState('');
-  const [weight, setWeight] = React.useState('');
+  const [editModalVisble, setEditModalVisble] = React.useState(false);
+  const [selectedCompetitor, setSelectedCompetitor] = React.useState(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const navigate = useNavigate();
 
@@ -279,50 +273,58 @@ const CategoryDetailsView = observer((props) => {
   //console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
   
   return (
-    <Stack sx={{ flex: 9, flexDirection: 'column', p: 2 }}>
-      <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
-        {currentTournamentCategory?.categoryTitleFull}
-      </Typography>
-      <Grid container justifyContent={'center'} sx={{ p: 2 }}>
-        <Grid item xs={3}>
-          <Button
-            //sx={{ height: '40px', mt: 2 }}
-            size='noraml'
-            fullWidth
-            variant='contained'
-            onClick={navigateToCompetitors}
-          >Додати учасника</Button>
+    <>
+      <Stack sx={{ flex: 9, flexDirection: 'column', p: 2 }}>
+        <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
+          {currentTournamentCategory?.categoryTitleFull}
+        </Typography>
+        <Grid container justifyContent={'center'} sx={{ p: 2 }}>
+          <Grid item xs={3}>
+            <Button
+              //sx={{ height: '40px', mt: 2 }}
+              size='noraml'
+              fullWidth
+              variant='contained'
+              onClick={navigateToCompetitors}
+            >
+              Додати учасника
+            </Button>
+          </Grid>
         </Grid>
-      </Grid>
-      <Stack elevation={2} sx={{ flexGrow: 1, mt: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
-        <TextField
-          fullWidth
-          sx={{ mb: 2 }}
-          size='small'
-          onChange={(event) => {
-            setSearchQuery(event.target.value);
-          }}
-          id="outlined-basic"
-          label="Пошук по учасниках"
-          variant="outlined"
-          value={searchQuery}
-        />
-        <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
-          {categoryCompetitorsList.map((competitor, index) => (
-            <CompetitorRow key={competitor.id}
-              position={index + 1}
-              firstName={competitor.firstName}
-              lastName={competitor.lastName}
-              weight={`${competitor.weight} ${tournamentStore.weightUnit.label}`}
-              categories={competitor.tournamentCategoryIds.map(
-                (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
-               )}
-              onDelete={() => tournamentStore.removeCompetitorFromCategory(competitor.id, props.tournamentCategoryId)}
-            />
-          ))}
+        <Stack elevation={2} sx={{ flexGrow: 1, mt: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
+          <TextField
+            fullWidth
+            sx={{ mb: 2 }}
+            size='small'
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+            }}
+            id="outlined-basic"
+            label="Пошук по учасниках"
+            variant="outlined"
+            value={searchQuery}
+          />
+          <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
+            {categoryCompetitorsList.map((competitor, index) => (
+              <CompetitorRow
+                key={competitor.id}
+                position={index + 1}
+                firstName={competitor.firstName}
+                lastName={competitor.lastName}
+                weight={`${competitor.weight} ${tournamentStore.weightUnit.label}`}
+                categories={competitor.tournamentCategoryIds.map(
+                  (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
+                )}
+                onEdit={() => {
+                  setEditModalVisble(true);
+                  setSelectedCompetitor(competitor);
+                }}
+                onDelete={() => tournamentStore.removeCompetitorFromCategory(competitor.id, props.tournamentCategoryId)}
+              />
+            ))}
+          </Stack>
         </Stack>
-      </Stack>
-      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1, width: '100%' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1, width: '100%' }}>
           <Button
             color='error'
             size='small'
@@ -332,7 +334,18 @@ const CategoryDetailsView = observer((props) => {
               Видалити категорію
           </Button>
         </Box>
-    </Stack>
+      </Stack>
+      <EditCompetitorModal
+        key={selectedCompetitor?.id}
+        onEdit={(editedCompetitor) => tournamentStore.editCompetitor(editedCompetitor)}
+        onClose={() => {
+          setEditModalVisble(false);
+          setSelectedCompetitor(null);
+        }}
+        competitor={selectedCompetitor}
+        modalVisible={editModalVisble}
+      /> 
+    </>
   )
 })
 
