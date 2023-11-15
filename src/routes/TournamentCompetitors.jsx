@@ -44,7 +44,7 @@ const ITEM_PADDING_TOP = 8;
 const MenuProps = {
   PaperProps: {
     style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+      maxHeight: ITEM_HEIGHT * 10.5 + ITEM_PADDING_TOP,
       width: 250,
     },
   },
@@ -166,11 +166,11 @@ export default observer(function TournamentCompetitors() {
                 size='small'
                 fullWidth
                 onChange={(event) => {
-                  const regex = /^[0-9\b]+$/;
+                  //const regex = /^[0-9\b]+$/;
                   // if value is not blank, then test the regex
-                  if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
+                  //if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
                     setWeight(event.target.value)
-                  }
+                  //}
                 }}
                 margin="normal"
                 id="outlined-basic"

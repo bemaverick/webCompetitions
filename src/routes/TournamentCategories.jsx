@@ -259,7 +259,7 @@ const CategoryDetailsView = observer((props) => {
 
   const categoryCompetitorsList = React.useMemo(() => {
     let filtered = tournamentStore.competitorsList.filter(
-      (competitor => competitor.tournamentCategoryIds.includes(props.tournamentCategoryId)))
+      (competitor => competitor.tournamentCategoryIds.includes(props.tournamentCategoryId) && competitor.present))
     if (searchQuery.length > 0) {
       filtered = filtered.filter((competitor) => (
         competitor.firstName.toLowerCase().includes(searchQuery.toLowerCase())

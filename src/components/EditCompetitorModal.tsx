@@ -133,11 +133,11 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               size='small'
               fullWidth
               onChange={(event) => {
-                const regex = /^[0-9\b]+$/;
+             //   const regex = /^[0-9\b]+$/;
                 // if value is not blank, then test the regex
-                if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
+            //    if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
                   setWeight(event.target.value)
-                }
+              //  }
               }}
               margin="normal"
               id="outlined-basic"
