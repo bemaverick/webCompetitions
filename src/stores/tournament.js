@@ -2,7 +2,7 @@
 
 import { makeAutoObservable, autorun, toJS } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
-import _ from 'lodash';
+import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
 
 const FAKE_competitorsList = [
@@ -128,7 +128,9 @@ class TournamentStore {
       rounds: {
         0: {
           groupA: [],
-          groupB: []
+          groupB: [],
+          finalist: null,
+          semifinalist: null,
         }
       },
       selectedRound: 0
@@ -139,7 +141,9 @@ class TournamentStore {
       rounds: {
         0: {
           groupA: [],
-          groupB: []
+          groupB: [],
+          finalist: null,
+          semifinalist: null,
         }
       },
       selectedRound: 0
@@ -150,7 +154,9 @@ class TournamentStore {
       rounds: {
         0: {
           groupA: [],
-          groupB: []
+          groupB: [],
+          finalist: null,
+          semifinalist: null,
         }
       },
       selectedRound: 0
@@ -174,7 +180,6 @@ class TournamentStore {
   competitorsList = [];
   // competitorsList = FAKE_competitorsList;
 
-
   results = {};
 
   setTournamentBasicSettings = ({ 
@@ -194,24 +199,30 @@ class TournamentStore {
   // setTournamentName = (name) => this.tournamentName = name;
 
   // setTournamentDate = (date) => this.tournamentDate = date;
-
   setTablesConfig = (tablesCount) => {
-    this.tablesCount = tablesCount;
+    this.tablesCount = tablesCount;  
+    this.tables = {}; //reset and then fill                
     for (let i = 0; i < tablesCount; i ++ ) {
-      this.tables[i] = {
+      this.tables[i] = {    
         state: 'idle',
         category: '',
-        rounds: { 0: { groupA: [], groupB: [] }},
+        rounds: {
+          0: {
+            groupA: [],     
+            groupB: [],
+            finalist: null,
+            semifinalist: null,
+        }
+        },
         selectedRound: 0,
       } 
     }
-    console.log(toJS(this.tables));
+
   };
 
   setCurrentTableIndex = (index) => this.currentTableIndex = index;
 
   setSelectedRoundIndex = (index) => this.currentTable.selectedRound = index;
-
 
   addWeightCategory = (weightCategory) => {
     this.weightCategories = [...this.weightCategories, weightCategory];
@@ -320,12 +331,8 @@ class TournamentStore {
 
 
   addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds, present }) => {
-
     const newCompetitor = {
       tournamentCategoryIds,
-      // leftHand: tournamentCategory.config.hand === 'left',
-      // rightHand: tournamentCategory.config.hand === 'right',
-      // gender: tournamentCategory.config.gender,
       firstName, 
       lastName, 
       weight, 
@@ -346,7 +353,7 @@ class TournamentStore {
   removeCompetitorFromCategory = (competitorId, tournamentCategoryId) => {
     const competitorIndex = this.competitorsList.findIndex((competitor) => competitor.id === competitorId);
     const updatedTournamentCategoryIds = this.competitorsList[competitorIndex].tournamentCategoryIds.filter((id) => id !== tournamentCategoryId);
-    if (!updatedTournamentCategoryIds.length) { //copmetitor was presented only in this category, should be removed
+    if (!updatedTournamentCategoryIds.length) { // competitor was presented only in this category, should be removed
       this.competitorsList = this.competitorsList.filter((competitor) => competitor.id !== competitorId);
     } else { // competitor is presented in other categories, so tournamentCategoryIds should be updated;\
       this.competitorsList = this.competitorsList.map((competitor) => {
@@ -377,7 +384,9 @@ class TournamentStore {
         rounds: {
           0: {
             groupA: [],
-            groupB: []
+            groupB: [],
+            finalist: null,
+            semifinalist: null,
           }
         },
         selectedRound: 0
@@ -399,24 +408,89 @@ class TournamentStore {
     this.currentTable.rounds[0].groupA = _.shuffle(groupA);
     this.currentTable.selectedRound = 0;
     this.currentRound.groupB = [];
+    this.currentRound.finalist = null;
+    this.currentRound.semifinalist = null;
   }
 
   startNextRound = () => {
-    const nextRoundIndex = +this.currentRoundIndex + 1; //fix this
+    const nextRoundIndex = this.currentRoundIndex + 1;
     const newRoundGroupA = [];
     let newRoundGroupB = [];
-    const finishedGroup = [];
+    let finalist = this.currentFinalist;
+    let semifinalist = this.currentSemiFinalist;
+    const finishedGroup = []; // list of competitors who have finished in current round;
+    let exitToFinal = false; // who will go to final and who to semifinal, both competitors with no loses;
+    let isSuperFinal = false; // when groupB is empty and there are 2 competitors in groupA with 1 lose for each;
+    console.log('initial finalist',  finalist)
+		console.log('initial semifinalist',  semifinalist)
 
- 
     this.currentGroupA.map((competitor, index) => {
-      const isLastPairIncomplete = (index === this.currentGroupA.length - 1) && this.currentGroupA.length % 2 === 1;
+      const currentGroupALength = this.currentGroupA.length;
+      const isLastPairIncomplete = (index === currentGroupALength - 1) && currentGroupALength % 2 === 1; 
       const isCompetitorWinner = competitor.stats[this.currentRoundIndex].result === 'win';
       const isCompetitorLoser = competitor.stats[this.currentRoundIndex].result === 'lose';
-      //IN THE FINAL IN GROUP A CAN BE A COMPETITOR WITH LOSES, WE NEED TO COUNT LOSEESl
-      const numberOfLoses = Object.values(competitor.stats).reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0);
-      console.log(competitor.lastName, numberOfLoses, JSON.stringify(competitor.stats))
+      if (currentGroupALength === 2 && index === 0) { // 
+        const firstCompetitorLosesCountInPrevRoounds = Object.keys(competitor.stats) //we dont count lose in current round
+          .reduce((prev, current) => prev + (competitor.stats[current].result === 'lose' && current != this.currentRoundIndex ? 1 : 0), 0);
+        const secondCompetitorLosesCountInPrevRounds = Object.keys(this.currentGroupA[1].stats) //we dont count lose in current round
+          .reduce((prev, current) => prev + (this.currentGroupA[1].stats[current].result === 'lose' && current != this.currentRoundIndex ? 1 : 0), 0);
+        if (firstCompetitorLosesCountInPrevRoounds === 0 && secondCompetitorLosesCountInPrevRounds === 0) {
+          exitToFinal = true;
+        }
+        console.log('LosesCountInPrevRoounds', firstCompetitorLosesCountInPrevRoounds, secondCompetitorLosesCountInPrevRounds);
+      };
 
-      // 2 LOSES IN A => COMPETITOR FINISHING
+      if (exitToFinal) { // to prevent copy of competitor in next iteration
+        if (!semifinalist && !finalist) {
+          if (isCompetitorWinner) {
+            finalist = competitor;
+            semifinalist = this.currentGroupA[1];
+          }
+          if (isCompetitorLoser) {
+            semifinalist = competitor; 
+            finalist = this.currentGroupA[1];
+          }
+        }
+        return;
+      }
+
+      if (index === 0 && this.currentGroupB.length === 0 && currentGroupALength === 2 ) { //&& !semifinalist && !finalist
+        //can be SUPERFINAL, && !semifinalist && !finalist is unnecessary
+        const firstCompetitorLosesCountInAllRoounds = Object.values(competitor.stats)
+          .reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0);
+        const secondCompetitorLosesCountInAllRounds = Object.values(this.currentGroupA[1].stats)
+          .reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0); 
+        console.log('CompetitorLosesCountInAllRoounds', firstCompetitorLosesCountInAllRoounds, secondCompetitorLosesCountInAllRounds)
+        if (firstCompetitorLosesCountInAllRoounds === 1 && secondCompetitorLosesCountInAllRounds === 1) { // mens superfinal
+          isSuperFinal = true;
+          if (isCompetitorWinner) {
+            const updatedWinner = _.cloneDeep(competitor);
+            _.set(updatedWinner.stats, [nextRoundIndex, 'result'], 'idle');
+            newRoundGroupA.push(updatedWinner);
+            const updatedLoser = _.cloneDeep(this.currentGroupA[1]);
+            _.set(updatedLoser.stats, [nextRoundIndex, 'result'], 'idle');
+            newRoundGroupA.push(updatedLoser);
+          } 
+          if (isCompetitorLoser) {
+            const updatedLoser = _.cloneDeep(competitor);
+            _.set(updatedLoser.stats, [nextRoundIndex, 'result'], 'idle');
+            newRoundGroupA.push(updatedLoser);
+            const updatedWinner = _.cloneDeep(this.currentGroupA[1]);
+            _.set(updatedWinner.stats, [nextRoundIndex, 'result'], 'idle');
+            newRoundGroupA.unshift(updatedWinner);
+          }
+          return;
+        }
+      }
+      if (isSuperFinal) { // all competitors already calculated above, prevent copy of loser competitor in next iteration
+        return;
+      }
+
+      //IN THE FINAL IN GROUP A CAN BE A COMPETITOR WITH LOSSES, WE NEED TO COUNT LOSSES
+      const numberOfLoses = Object.values(competitor.stats).reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0);
+      console.log(competitor.lastName, numberOfLoses)
+
+      // 2 LOSES IN A => COMPETITION IS FINISHING
       if (numberOfLoses === 2) {
         finishedGroup.unshift( _.cloneDeep(competitor));
         return;
@@ -457,38 +531,48 @@ class TournamentStore {
       }
       if (isCompetitorWinner) {
         const updateCompetitor = _.cloneDeep(competitor);
-        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle');
         newRoundGroupB.push(updateCompetitor)
       }
       // COMPETITOR FINISHING AND MOVED TO RESULT
       if (isCompetitorLoser) {
-        finishedGroup.push(_.cloneDeep(competitor));
+        finishedGroup.unshift(_.cloneDeep(competitor)); 
       }
     });
 
-    //COMPETITOR FROM B MOVES TO FINAL
-    if (newRoundGroupB.length === 1 && newRoundGroupA.length === 1) {
-      newRoundGroupA.push(_.cloneDeep(newRoundGroupB[0]));
-      newRoundGroupB = [];
+    if (semifinalist) {
+      if (newRoundGroupB.length === 1 || newRoundGroupB.length == 0) {
+        const updateCompetitor = _.cloneDeep(semifinalist);
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle');
+        newRoundGroupB.unshift(updateCompetitor);
+        semifinalist = null;
+      }
     } 
+
+    if (finalist) {
+      if (!semifinalist && newRoundGroupB.length === 1) {
+        const updatedFinalist = _.cloneDeep(finalist);
+        _.set(updatedFinalist.stats, [nextRoundIndex, 'result'], 'idle');
+        newRoundGroupA.push(updatedFinalist);
+        const updatedSemifinalist = _.cloneDeep(newRoundGroupB[0]);
+        _.set(updatedSemifinalist.stats, [nextRoundIndex, 'result'], 'idle');
+        newRoundGroupA.push(updatedSemifinalist);
+        finalist = null;
+        newRoundGroupB = [];
+      }
+    }
 
     //END OF CATEGORY
     if (newRoundGroupA.length === 1 && newRoundGroupB.length === 0) {
       this.setTournamentCategoryStatus('finished');
       this.setTableStatus(this.currentTableIndex, 'finished');
-      finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));
-      this.logRoundResults(finishedGroup);
+      finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));       
+      this.logRoundResults(finishedGroup);                       
       return;
-
     }
 
-    //  console.log('nextRound', nextRoundIndex)
-    //  console.log('groupA', toJS(newRoundGroupA))
-    //  console.log('groupB',  toJS(newRoundGroupB))
-
-    
      this.logRoundResults(finishedGroup);
-     this.currentTable.rounds[nextRoundIndex] = { groupA: newRoundGroupA, groupB: newRoundGroupB };
+     this.currentTable.rounds[nextRoundIndex] = { groupA: newRoundGroupA, groupB: newRoundGroupB, finalist: finalist, semifinalist: semifinalist };
      this.currentTable.selectedRound = nextRoundIndex;
   }
 
@@ -516,10 +600,16 @@ class TournamentStore {
   
 
   logRoundResults = (finishedGroup) => {
-    if (!this.results[this.currentTable.category]) {
-      this.results[this.currentTable.category] = [];
+    const competitorsCount = this.currentTable.rounds[0].groupA.length;
+    if (!this.results[this.currentTable.category]) { //means category id;
+      this.results[this.currentTable.category] = new Array(competitorsCount).fill(null);
     } 
-    this.results[this.currentTable.category] = [...finishedGroup, ...this.results[this.currentTable.category]]
+    const results = this.results[this.currentTable.category];
+    let firstCompetitorIndex = results.findIndex((competitor) => !!competitor);
+    if (firstCompetitorIndex === -1) { firstCompetitorIndex = results.length };
+    results.splice(firstCompetitorIndex - finishedGroup.length, finishedGroup.length, ...finishedGroup);
+
+    this.results[this.currentTable.category] = results.map((el) => el);
 
     console.log(toJS(this.results))
   }
@@ -547,6 +637,10 @@ class TournamentStore {
     delete this.postponedCategoriesProgress[this.currentTable.category];
   }
 
+  removeResults = () => {
+    this.results = {};
+  }
+
   get
   currentTable() {
     return this.tables[this.currentTableIndex];
@@ -554,7 +648,7 @@ class TournamentStore {
   
   get
   currentRoundIndex() {
-    return this.currentTable.selectedRound;
+    return +this.currentTable.selectedRound;
   }
 
   get
@@ -580,6 +674,17 @@ class TournamentStore {
   get
   currentGroupBChunked() {
     return _.chunk(this.currentRound.groupB, 2);
+  }
+
+
+  get
+  currentFinalist() {
+    return this.currentRound.finalist || null; // can be undefined for prerounds so need fallback
+  }
+
+  get
+  currentSemiFinalist() {
+    return this.currentRound.semifinalist || null; // can be undefined for prerounds so need fallback
   }
 
 

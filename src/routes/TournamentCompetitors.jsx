@@ -4,12 +4,14 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from '@mui/material/ToggleButton';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormControl from '@mui/material/FormControl';
 import FormGroup from '@mui/material/FormGroup';
+import Tooltip from '@mui/material/Tooltip';
 
 import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
@@ -29,7 +31,6 @@ import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation  } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
@@ -37,7 +38,6 @@ import { tournamentStore } from '../stores/tournament';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
 
-const theme = createTheme();
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -66,6 +66,8 @@ export default observer(function TournamentCompetitors() {
   const [checkboxes, setCheckboxes] = React.useState({
     present: false,
   });
+  const [filterParam, setFilterParam] = React.useState('all');
+
   const { present } = checkboxes;
 
   const handleCheckboxChange = (event) => {
@@ -75,6 +77,7 @@ export default observer(function TournamentCompetitors() {
     });
   };
 
+  
 
   const navigate = useNavigate();
   console.log('tournamentCategoryId', location)
@@ -98,13 +101,19 @@ export default observer(function TournamentCompetitors() {
         || competitor.weight.toLowerCase().includes(searchQuery.toLowerCase())
       ))
     }
+    if (filterParam === 'present') {
+      filtered = tournamentStore.competitorsList.filter((competitor) => competitor.present)
+    };
+    if (filterParam === 'preliminary') {
+      filtered = tournamentStore.competitorsList.filter((competitor) => !competitor.present)
+    };
     return filtered;
 
-  }, [tournamentStore.competitorsList, searchQuery]);
+  }, [tournamentStore.competitorsList, searchQuery, filterParam]);
 
 
   return (
-    <ThemeProvider theme={theme}>
+    <>
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
         <Stack sx={{  p: 2, flexGrow: 1, overflow: 'hidden' }}>
@@ -181,7 +190,9 @@ export default observer(function TournamentCompetitors() {
             </Grid>
             <Grid item xs={1.5} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
               <Box sx={{ pt: 1, }}>
-                <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Присутній" />
+                <Tooltip title="Учасник зважився і підтвердив участь в категорії">
+                  <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Підтверджено" />
+                </Tooltip>
               </Box>
             </Grid>
             <Grid item xs={1}>
@@ -204,21 +215,48 @@ export default observer(function TournamentCompetitors() {
                   setSelectedCategoryIds([]);
                   setCheckboxes({ present: false })
                 }}  
-              >Додати</Button>
+              >
+                Додати
+              </Button>
             </Grid>
           </Grid>
-          <TextField
-            fullWidth
-            sx={{ mb: 2 }}
-            size='small'
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-            }}
-            id="outlined-basic"
-            label="Пошук по учасниках"
-            variant="outlined"
-            value={searchQuery}
-          />
+          <Grid container spacing={1} sx={{ pt: 1 }}>
+            <Grid item xs={9}>
+              <TextField
+                fullWidth
+                sx={{ mb: 2 }}
+                size='small'
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                }}
+                id="outlined-basic"
+                label="Пошук по учасниках"
+                variant="outlined"
+                value={searchQuery}
+              />
+            </Grid>
+            <Grid item xs={3}>
+              <FormControl size="small" fullWidth>
+                <InputLabel id="demo-simple-select-label">Показувати</InputLabel>
+                <Select
+                  labelId="demo-multiple-checkbox-label"
+                  id="demo-multiple-checkbox"
+                  value={filterParam}
+                  onChange={(event) => {
+                    setFilterParam(event.target.value);
+                  }}
+                  input={<OutlinedInput  label="Показувати" />}
+                  MenuProps={MenuProps}
+                >
+                  <MenuItem value={'all'}>Всі учасники</MenuItem>
+                  <MenuItem value={'present'}>Підтверджені участники</MenuItem>
+                  <MenuItem value={'preliminary'}>Попередній список</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+
+
           <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
             {сompetitorsList.map((competitor, index) => (
               <CompetitorRow
@@ -252,6 +290,6 @@ export default observer(function TournamentCompetitors() {
         competitor={selectedCompetitor}
         modalVisible={editModalVisble}
       />             
-    </ThemeProvider>
+    </>
   )
 });

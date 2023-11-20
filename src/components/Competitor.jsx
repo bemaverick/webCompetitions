@@ -100,7 +100,7 @@ export const CompetitorRow = (props) => {
         {columnConfig.present?.visible && (
           <Grid item xs={columnConfig.present.flex } sx={{ }}> 
             <Typography textAlign={'center'} variant="body1">
-              {props.present ? "Присутній" : "Попередня заявка"}
+              {props.present ? "Підтверджено" : "Попередня заявка"}
             </Typography>
           </Grid>
         )}

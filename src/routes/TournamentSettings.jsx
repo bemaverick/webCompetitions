@@ -18,7 +18,6 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
 import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate  } from 'react-router-dom';
 import { observer } from "mobx-react-lite";
@@ -36,7 +35,6 @@ import { v4 as uuidv4 } from 'uuid';
 import _ from "lodash"
 
 
-const theme = createTheme();
 
 const ListItem = styled('li')(({ theme }) => ({
   margin: theme.spacing(0.5),
@@ -143,182 +141,180 @@ export default observer(function TournamentSettings() {
   const navigate = useNavigate();
 
   return (
-    <ThemeProvider theme={theme}>
-      <Grid container sx={{ justifyContent: 'center', mt: 2, }}>
-        <Grid item xs={10}>
-          <Card raised>
-            <CardContent>
-              <TextField
-                id="outlined-basic"
-                label="Назва турніру"
-                variant="outlined"
-                fullWidth 
-                value={tournamentName}
-                onChange={(event) => {
-                  setTournamentName(event.target.value);
-                }}
-                color="success"
-                helperText="Назва турніру, наприклад - 'Кубок Київської області'"
-                margin='normal'
-              />
-              <Grid container sx={{ justifyContent: 'center' }} spacing={2}>
+    <Grid container sx={{ justifyContent: 'center', mt: 2, }}>
+      <Grid item xs={10}>
+        <Card raised>
+          <CardContent>
+            <TextField
+              id="outlined-basic"
+              label="Назва турніру"
+              variant="outlined"
+              fullWidth 
+              value={tournamentName}
+              onChange={(event) => {
+                setTournamentName(event.target.value);
+              }}
+              color="success"
+              helperText="Назва турніру, наприклад - 'Кубок Київської області'"
+              margin='normal'
+            />
+            <Grid container sx={{ justifyContent: 'center' }} spacing={2}>
 
-                <Grid item xs={6} >
-                  <FormControl fullWidth margin='normal'>
-                    {/* <InputLabel id="demo-simple-select-label">Дата проведення</InputLabel> */}
-                    <DatePicker label="Дата проведення" value={new Date(tournamentDate)}  onChange={setTournamentDate} />
-                    <FormHelperText>Дата проведення турніру</FormHelperText>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={6}>
-                  <FormControl fullWidth margin='normal'>
-                    <InputLabel id="demo-simple-select-label">Кількість столів</InputLabel>
-                    <Select
-                      labelId="demo-simple-select-label"
-                      id="demo-simple-select"
-                      value={tablesCount}
-                      label="Кількість столів"
-                      onChange={(event) => setTablesCount(event.target.value)}
-                    >
-                      {tableCountSelectOptions.map((table) => <MenuItem key={table.key} value={table.value}>{table.title}</MenuItem>)}
-                    </Select>
-                    <FormHelperText>Кількість столів, за якими буде проводитись боротьба</FormHelperText>
-                  </FormControl>
-                </Grid>
+              <Grid item xs={6} >
+                <FormControl fullWidth margin='normal'>
+                  {/* <InputLabel id="demo-simple-select-label">Дата проведення</InputLabel> */}
+                  <DatePicker label="Дата проведення" value={new Date(tournamentDate)}  onChange={setTournamentDate} />
+                  <FormHelperText>Дата проведення турніру</FormHelperText>
+                </FormControl>
               </Grid>
 
-              <Alert variant='filled' severity="info" sx={{ mt: 2, mb: 2 }}>
-                <AlertTitle>Увага</AlertTitle>
-                Турнірна категорія формуються з вагової категорії, класифікації та руки на якій відбудеться боротьба (ліва чи права). 
-                Наприклад, категорія "70кг, дорослі чоловіки, ліва рука" сформована з вагової категорії - "70 кг" та класифікації - "дорослі чоловіки".
-              </Alert>
-              <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
-                Вагові Категорії (у кілограмах):
-              </Typography>
-              <Paper
-                elevation={0}
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'flex-start',
-                  flexWrap: 'wrap',
-                  listStyle: 'none',
-                  p: 0.5,
-                  m: 0,
-                }}
-                component="ul"
-              >
-                <FormControl sx={{ m: 0, width: '20ch',  pr: 2 }} variant="outlined">
-                  <OutlinedInput
-                    size='small'
-                    sx={{
-                      //height: '32px'
-                    }}
-                    value={weightCategory}
-                    onChange={(event) => {
-                      const regex = /^[0-9\b]+\+?$/;
-                      // if value is not blank, then test the regex
-                      if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
-                        setWeightCategory(event.target.value)
-                      }
-                    }}
-                    onKeyDown={onAddCategory}
-                    placeholder='Додати'
-                    id="outlined-adornment-weight"
-                    endAdornment={<InputAdornment position="end">{weightUnitLabel}</InputAdornment>}
-                    aria-describedby="outlined-weight-helper-text"
-                    inputProps={{
-                      'aria-label': 'weight',
-                    }}
-                  />
-                </FormControl>
-                {weightCategories.map((category, index) => {
-                  return (
-                    <ListItem key={category.id}>
-                      <Chip
-                        color="primary" 
-                        sx={{ mb: 1 }}
-                        label={category.id === 'xxx' ? category.value: `${category.value} ${weightUnitLabel}`}
-                        onDelete={(weightCategories.length === 1 || category.id === 'xxx') ? undefined : () => onDeleteWeightCategory(category.id)}
-                      />
-                    </ListItem>
-                  );
-                })}
-
-              </Paper>
-
-              <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
-                Класифікація:
-              </Typography>
-              <Paper
-                elevation={0}
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'flex-start',
-                  flexWrap: 'wrap',
-                  listStyle: 'none',
-                  p: 0.5,
-                  m: 0,
-                }}
-                component="ul"
-              >
-                <FormControl sx={{ m: 0, width: '20ch', pr: 2 }} variant="outlined">
-                  <TextField
-                    id="outlined-basic"
-                    placeholder='Створити'
-                    variant="outlined"
-                    size='small'
-                    value={classification}
-                    onChange={(event) => {
-                      setClassification(event.target.value);
-                     }}
-                     onKeyDown={onAddClassification}
-                  />
-                  {/* <OutlinedInput
-                    size='small'
-                    sx={{
-                      //height: '32px'
-                    }}
-                    placeholder='Додати'
-                    id="outlined-adornment-weight"
-                    aria-describedby="outlined-weight-helper-text"
-                    inputProps={{
-                      'aria-label': 'weight',
-                    }}
-                  /> */}
-                </FormControl>
-                {classificationCategories.map((classification, index) => {
-                  return (
-                    <ListItem key={classification.id}>
-                      <Chip
-                        color="secondary" 
-                        sx={{ mb: 1 }}
-                        label={classification.label}
-                        onDelete={(classificationCategories.length === 1) ? undefined : () => onDeleteClassification(classification.id)}
-                      />
-                    </ListItem>
-                  );
-                })}
-
-              </Paper>
-              <Stack direction="row" spacing={2} sx={{  justifyContent: "center", mt: 2, mb: 2 }}>
-                <Button
-                    onClick={onSave}
-                    color="primary"
-                    size="large"
-                    variant="outlined"
+              <Grid item xs={6}>
+                <FormControl fullWidth margin='normal'>
+                  <InputLabel id="demo-simple-select-label">Кількість столів</InputLabel>
+                  <Select
+                    labelId="demo-simple-select-label"
+                    id="demo-simple-select"
+                    value={tablesCount}
+                    label="Кількість столів"
+                    onChange={(event) => setTablesCount(event.target.value)}
                   >
-                    Застосувати зміни
-                  </Button>
-              </Stack>
+                    {tableCountSelectOptions.map((table) => <MenuItem key={table.key} value={table.value}>{table.title}</MenuItem>)}
+                  </Select>
+                  <FormHelperText>Кількість столів, за якими буде проводитись боротьба</FormHelperText>
+                </FormControl>
+              </Grid>
+            </Grid>
 
-            </CardContent>
-            
-          </Card>
-        
-        </Grid>
+            <Alert variant='filled' severity="info" sx={{ mt: 2, mb: 2 }}>
+              <AlertTitle>Увага</AlertTitle>
+              Турнірна категорія формуються з вагової категорії, класифікації та руки на якій відбудеться боротьба (ліва чи права). 
+              Наприклад, категорія "70кг, дорослі чоловіки, ліва рука" сформована з вагової категорії - "70 кг" та класифікації - "дорослі чоловіки".
+            </Alert>
+            <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
+              Вагові Категорії (у кілограмах):
+            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-start',
+                flexWrap: 'wrap',
+                listStyle: 'none',
+                p: 0.5,
+                m: 0,
+              }}
+              component="ul"
+            >
+              <FormControl sx={{ m: 0, width: '20ch',  pr: 2 }} variant="outlined">
+                <OutlinedInput
+                  size='small'
+                  sx={{
+                    //height: '32px'
+                  }}
+                  value={weightCategory}
+                  onChange={(event) => {
+                    const regex = /^[0-9\b]+\+?$/;
+                    // if value is not blank, then test the regex
+                    if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
+                      setWeightCategory(event.target.value)
+                    }
+                  }}
+                  onKeyDown={onAddCategory}
+                  placeholder='Додати'
+                  id="outlined-adornment-weight"
+                  endAdornment={<InputAdornment position="end">{weightUnitLabel}</InputAdornment>}
+                  aria-describedby="outlined-weight-helper-text"
+                  inputProps={{
+                    'aria-label': 'weight',
+                  }}
+                />
+              </FormControl>
+              {weightCategories.map((category, index) => {
+                return (
+                  <ListItem key={category.id}>
+                    <Chip
+                      color="primary" 
+                      sx={{ mb: 1 }}
+                      label={category.id === 'xxx' ? category.value: `${category.value} ${weightUnitLabel}`}
+                      onDelete={(weightCategories.length === 1 || category.id === 'xxx') ? undefined : () => onDeleteWeightCategory(category.id)}
+                    />
+                  </ListItem>
+                );
+              })}
+
+            </Paper>
+
+            <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
+              Класифікація:
+            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                display: 'flex',
+                justifyContent: 'flex-start',
+                flexWrap: 'wrap',
+                listStyle: 'none',
+                p: 0.5,
+                m: 0,
+              }}
+              component="ul"
+            >
+              <FormControl sx={{ m: 0, width: '20ch', pr: 2 }} variant="outlined">
+                <TextField
+                  id="outlined-basic"
+                  placeholder='Створити'
+                  variant="outlined"
+                  size='small'
+                  value={classification}
+                  onChange={(event) => {
+                    setClassification(event.target.value);
+                    }}
+                    onKeyDown={onAddClassification}
+                />
+                {/* <OutlinedInput
+                  size='small'
+                  sx={{
+                    //height: '32px'
+                  }}
+                  placeholder='Додати'
+                  id="outlined-adornment-weight"
+                  aria-describedby="outlined-weight-helper-text"
+                  inputProps={{
+                    'aria-label': 'weight',
+                  }}
+                /> */}
+              </FormControl>
+              {classificationCategories.map((classification, index) => {
+                return (
+                  <ListItem key={classification.id}>
+                    <Chip
+                      color="secondary" 
+                      sx={{ mb: 1 }}
+                      label={classification.label}
+                      onDelete={(classificationCategories.length === 1) ? undefined : () => onDeleteClassification(classification.id)}
+                    />
+                  </ListItem>
+                );
+              })}
+
+            </Paper>
+            <Stack direction="row" spacing={2} sx={{  justifyContent: "center", mt: 2, mb: 2 }}>
+              <Button
+                  onClick={onSave}
+                  color="primary"
+                  size="large"
+                  variant="outlined"
+                >
+                  Застосувати зміни
+                </Button>
+            </Stack>
+
+          </CardContent>
+          
+        </Card>
+      
       </Grid>
-    </ThemeProvider>
+    </Grid>
   )
 
   return (

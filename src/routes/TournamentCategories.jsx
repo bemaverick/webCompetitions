@@ -17,7 +17,6 @@ import { Button, Stack, Modal, FormControl, MenuItem, Select, InputLabel, Divide
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate  } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
@@ -30,7 +29,6 @@ import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
 
 
-const theme = createTheme();
 
 
 const handTranslations = {
@@ -53,7 +51,7 @@ export default observer(function TournamentCategories() {
 
   if (isTournamentCategoriesListEmpty) {
     return (
-      <ThemeProvider theme={theme}>
+      <>
         <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
           <Toolbar />
           <Stack sx={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', p: 2, pb: 4 }}>
@@ -77,12 +75,12 @@ export default observer(function TournamentCategories() {
           onClose={() => setCreatingCategoryModal(false)}
           setCurrentCategory={(id) => setCurrentCategoryId(id)}
         />
-      </ThemeProvider>  
+      </>  
     )
   }
 
   return (
-    <ThemeProvider theme={theme}>
+    <>
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
         <Stack sx={{ flexGrow: 1, overflow: 'hidden', flexDirection: 'row'}}>
@@ -128,7 +126,7 @@ export default observer(function TournamentCategories() {
         onClose={() => setCreatingCategoryModal(false)}
         setCurrentCategory={(id) => setCurrentCategoryId(id)}
       />    
-    </ThemeProvider>
+    </>
   )
 
 

@@ -23,7 +23,6 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListSubheader from '@mui/material/ListSubheader';
 import { CompetitorRow } from '../components/Competitor';
 
-
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 
@@ -72,6 +71,15 @@ export default observer(function TournamentResults() {
   return (
     <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
       <Toolbar />
+      <Button
+        sx={{ mt: 2, mb: 3, }}
+        onClick={() => {
+          tournamentStore.removeResults();
+        }}
+        variant='outlined'
+      >
+        Видалити
+      </Button>
       <Stack sx={{ flexGrow: 1, overflow: 'hidden', flexDirection: 'row'}}>
         <Stack sx={{ flex: 2, overflow: 'scroll', p: 2, pt: 0 }}>
           <List
@@ -124,32 +132,14 @@ const CategoryDetailsView = observer((props) => {
         {currentTournamentCategory?.categoryTitleFull}
       </Typography>
       <Stack elevation={2} sx={{ flexGrow: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
-        <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
-          {results.map((competitor, index) => (
-            <CompetitorRow
-              withEmoji
-              key={competitor.id}
-              moreButtonVisible={false}
-              position={index + 1}
-              columnConfig={{
-                firstName: {
-                  visible: true,
-                  flex: 4
-                },
-                lastName: {
-                  visible: true,
-                  flex: 4
-                },
-                weight: {
-                  visible: true,
-                  flex: 4
-                },
-              }}
-              firstName={competitor.firstName}
-              lastName={competitor.lastName}
-              weight={`${competitor.weight} ${tournamentStore.weightUnit.label}`}
-            />
-          ))}
+        <Stack sx={{ flexGrow: 1, overflow: 'scroll', alignItems: 'center' }}>
+          <Box>
+            {results.map((competitor, index) => (
+              <Typography variant="body1" component="p" sx={{ p: 0, textAlign: 'left' }}>
+                {competitor ? `${index + 1}. ${competitor.lastName} ${competitor.firstName}` : `${index + 1}.`}
+              </Typography>
+            ))}
+          </Box>
         </Stack>
       </Stack>
     </Stack>

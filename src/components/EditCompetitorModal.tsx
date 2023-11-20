@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
 import { Button, MenuItem, Modal, FormControl, Select, InputLabel, Box, OutlinedInput, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
-
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import { observer } from 'mobx-react-lite';
@@ -148,7 +148,9 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
           </Grid>
           <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
             <Box sx={{ pt: 1, }}>
-              <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Присутній" />
+              <Tooltip title="Учасник зважився і підтвердив участь в категорії">
+                <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Підтверджено" />
+              </Tooltip>
             </Box>
           </Grid>
         </Grid>
