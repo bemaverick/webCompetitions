@@ -27,6 +27,7 @@ import Toolbar from '@mui/material/Toolbar';
 import { toJS } from 'mobx';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
+import { useIntl } from 'react-intl';
 
 
 
@@ -252,7 +253,7 @@ const CategoryDetailsView = observer((props) => {
   const navigate = useNavigate();
 
   const navigateToCompetitors = () => {
-    navigate('/tournamentCompetitors', { state: { tournamentCategoryId: props.tournamentCategoryId }});
+    navigate('/tournamentParticipants', { state: { tournamentCategoryId: props.tournamentCategoryId }});
   }
 
   const categoryCompetitorsList = React.useMemo(() => {
@@ -360,6 +361,7 @@ const modalChildreContainerStyle = {
 }
 
 const ModalForCategories = observer((props) => {
+  const intl = useIntl();
   const weightUnitLabel = tournamentStore.weightUnit.label;
   const [classification, setClassification] = React.useState({ id: '', label: '' });
   const [selectedWeightCategories, setSelectedWeightCategories] = React.useState({});
@@ -427,7 +429,12 @@ const ModalForCategories = observer((props) => {
             onChange={(event) => setClassification({ id: event.target.value, label: _.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value).label })}
           >
             {tournamentStore.classificationCategories.map((classificationCategory) => (
-              <MenuItem key={classificationCategory.id} value={classificationCategory.id}>{classificationCategory.label}</MenuItem>
+              <MenuItem
+                key={classificationCategory.id}
+                value={classificationCategory.id}
+              >
+                {classificationCategory.label || intl.formatMessage({ id: classificationCategory.labelKey })}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>

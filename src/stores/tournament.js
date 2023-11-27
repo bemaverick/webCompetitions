@@ -58,29 +58,32 @@ const weightCategoriesDefault = [
     value: '100+',
   }, {
     id: 'xxx',
-    value: 'абсолютна',
+    valueKey: 'unit.weight.kilogram',
   }
 ]
 
 const classificationCategoriesDefault = [
   {
     id: '1',
-    label: 'Дорослі',
+    labelKey: 'classification.seniors',
   }, {
     id: '2',
-    label: 'Юніори',
+    labelKey: 'classification.youth',
   }, {
     id: '3',
-    label: 'Молодь',
+    labelKey: 'classification.juniors',
   }, {
     id: '4',
-    label: 'Ветерани',
+    labelKey: 'classification.masters',
   }, {
     id: '5',
-    label: 'Професіонали',
+    labelKey: 'classification.grandmasters',
   }, {
     id: '6',
-    label: 'Аматори',
+    labelKey: 'classification.amateurs',
+  },    {
+    id: '7',
+    labelKey: 'classification.professionals',
   },
 ]
 
@@ -110,7 +113,7 @@ class TournamentStore {
     );
   }
 
-  weightUnit = { value: 'kg', factor: 1, label: 'кг' };
+  weightUnit = { value: 'kg', factor: 1, label: 'kg' };
 
   tournamentName = '';
 
@@ -243,7 +246,7 @@ class TournamentStore {
       }
       if (leftHand && men) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, чоловіки, ліва рука`;
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, mans, left hand`;
         createdCategories[id] = {
           categoryTitleFull,
           categoryTitleShort,
@@ -258,7 +261,7 @@ class TournamentStore {
       }
       if (rightHand && men) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, чоловіки, права рука`;
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, mans, right hand`;
         createdCategories[id] = {
           categoryTitleFull,
           categoryTitleShort,
@@ -273,7 +276,7 @@ class TournamentStore {
       }
       if (leftHand && women) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, жінки, ліва рука`;
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, women, left hand`;
         createdCategories[id] = {
           categoryTitleFull,
           categoryTitleShort,
@@ -288,7 +291,7 @@ class TournamentStore {
       }
       if (rightHand && women) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, жінки, права рука`;
+        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, women, right hand`;
         createdCategories[id] = {
           categoryTitleFull,
           categoryTitleShort,

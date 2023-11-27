@@ -14,8 +14,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
 import Typography from '@mui/material/Typography';
 import { useNavigate, useLocation } from "react-router-dom";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -24,6 +22,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import logo from '../assets/logo_white.jpeg';
+import { useIntl } from "react-intl";
 
 
 export async function action() {
@@ -44,31 +43,31 @@ const drawerWidth = 260;
 const drawerItems = [
   {
     id: '1',
-    title: "Турнір",
+    titleId: "common.tournament",
     path: "/",
     icon: () => <EmojiEventsIcon />
   },
   {
     id: '2',
-    title: "Налаштування",
+    titleId: "common.settings",
     path: "/tournamentSettings",
     icon: () => <DisplaySettingsIcon />
 
   }, , {
     id: '3',
-    title: "Категорії",
-    barTitle: "Категорії турніру",
+    titleId: "common.categories",
+    barTitleId: "common.tournamentCategories",
     path: "/tournamentCategories",
     icon: () => <CategoryIcon />
   }, {
     id: '4',
-    title: "Учасники",
-    path: "/tournamentCompetitors",
+    titleId: "common.participants",
+    path: "/tournamentParticipants",
     icon: () => <PeopleAltIcon />
 
   }, {
     id: '5',
-    title: "Результати",
+    titleId: "common.results",
     path: "/tournamentResults",
     icon: () => <FormatListNumberedIcon />
 
@@ -76,11 +75,12 @@ const drawerItems = [
 ]
 
 export default function Root() {
+  const intl = useIntl();
   const auth = useAuth();
   const navigate = useNavigate();
   const pathname = useLocation().pathname;
   const currentItem = drawerItems.filter((item => item.path === pathname))[0];
-  const appBarTitle = currentItem.barTitle || currentItem.title;
+  const appBarTitle = intl.formatMessage({ id: currentItem.barTitleId || currentItem.titleId });
   return (
     <Box sx={{ display: 'flex' }}>
       <AppBar
@@ -117,7 +117,7 @@ export default function Root() {
             // maxHeight: { xs: 233, md: 167 },
             // maxWidth: { xs: 350, md: 250 },
           }}
-          alt="The house from the offer."
+          alt="ARM GRID logo"
           src={logo}
         />
         <Typography variant="h5" noWrap component="div">
@@ -133,7 +133,7 @@ export default function Root() {
               <ListItemIcon>
                 {item.icon()}
               </ListItemIcon>
-              <ListItemText primary={item.title} />
+              <ListItemText primary={intl.formatMessage({ id: item.titleId })} />
             </ListItemButton>
           </ListItem>
         ))}
@@ -164,7 +164,7 @@ export default function Root() {
       }}
     >
       {pathname !== '/tournamentCategories'
-      && pathname !== '/tournamentCompetitors'
+      && pathname !== '/tournamentParticipants'
       && pathname !== '/tournamentResults'
       && pathname !== '/' && (
         <Toolbar />

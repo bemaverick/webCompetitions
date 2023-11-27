@@ -33,6 +33,7 @@ import OutlinedInput from '@mui/material/OutlinedInput';
 import InputAdornment from '@mui/material/InputAdornment';
 import { v4 as uuidv4 } from 'uuid';
 import _ from "lodash"
+import { useIntl } from 'react-intl';
 
 
 
@@ -80,6 +81,7 @@ const tableCountSelectOptions = [
 
 
 export default observer(function TournamentSettings() {
+  const intl = useIntl();
   const weightUnitLabel = tournamentStore.weightUnit.label;
   const [tournamentName, setTournamentName] = React.useState(tournamentStore.tournamentName);
   const [tournamentDate, setTournamentDate] = React.useState(tournamentStore.tournamentDate);
@@ -235,7 +237,11 @@ export default observer(function TournamentSettings() {
                     <Chip
                       color="primary" 
                       sx={{ mb: 1 }}
-                      label={category.id === 'xxx' ? category.value: `${category.value} ${weightUnitLabel}`}
+                      label={
+                        category.id === 'xxx'
+                          ? intl.formatMessage({ id: "unit.weight.kilogram" })
+                          : `${category.value} ${weightUnitLabel}`
+                      }
                       onDelete={(weightCategories.length === 1 || category.id === 'xxx') ? undefined : () => onDeleteWeightCategory(category.id)}
                     />
                   </ListItem>
@@ -268,8 +274,8 @@ export default observer(function TournamentSettings() {
                   value={classification}
                   onChange={(event) => {
                     setClassification(event.target.value);
-                    }}
-                    onKeyDown={onAddClassification}
+                  }}
+                  onKeyDown={onAddClassification}
                 />
                 {/* <OutlinedInput
                   size='small'
@@ -290,7 +296,11 @@ export default observer(function TournamentSettings() {
                     <Chip
                       color="secondary" 
                       sx={{ mb: 1 }}
-                      label={classification.label}
+                      label={
+                        classification.labelKey
+                        ? intl.formatMessage({ id: classification.labelKey }) // predefined classifications
+                        : classification.label
+                      }
                       onDelete={(classificationCategories.length === 1) ? undefined : () => onDeleteClassification(classification.id)}
                     />
                   </ListItem>
