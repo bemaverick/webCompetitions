@@ -24,6 +24,7 @@ import Root from "./root"
 const theme = createTheme();
 
 const locale = navigator.language;
+
 let lang;
 if (locale.includes("uk")) {
    lang = Ukrainian;

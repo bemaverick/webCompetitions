@@ -35,8 +35,6 @@ import { v4 as uuidv4 } from 'uuid';
 import _ from "lodash"
 import { useIntl } from 'react-intl';
 
-
-
 const ListItem = styled('li')(({ theme }) => ({
   margin: theme.spacing(0.5),
 }));
@@ -46,32 +44,32 @@ const tableCountSelectOptions = [
   {
     key: 0,
     value: 1,
-    title: '1 cтіл'
+    titleKey: 'tables.count.one'
 
   }, {
     key: 1,
     value: 2,
-    title: '2 cтоли'
+    titleKey: 'tables.count.two'
 
   }, {
     key: 2,
     value: 3,
-    title: '3 cтоли'
+    titleKey: 'tables.count.three'
     
   }, {
     key: 3,
     value: 4,
-    title: '4 столи'
+    titleKey: 'tables.count.four'
     
   }, {
     key: 4,
     value: 5,
-    title: '5 cтолів'
+    titleKey: 'tables.count.five'
     
   }, {
     key: 5,
     value: 6,
-    title: '6 cтолів'
+    titleKey: 'tables.count.six'
   },
 ]
 
@@ -127,14 +125,6 @@ export default observer(function TournamentSettings() {
     tournamentStore.setTournamentBasicSettings({ tournamentName, tournamentDate, tablesCount, weightCategories, classificationCategories });
   }
 
-  //const [weightCategory, setWeightCategory] = React.useState('50');
-  // const [classification, setClassification] = React.useState('Чоловіки');
-  const [modalVisible, setModalVisible] = React.useState(false);
-
-  const [tournamentCategoryWeight, setTournamentCategoryWeight] = React.useState("");
-  const [tournamentCategoryClassiication, setTournamentCategoryClassiication] = React.useState("");
-  const [tournamentCategoryHand, setTournamentCategoryHand] = React.useState("right");
-
 
   React.useEffect(() => {
     console.log('mount Tournament');
@@ -149,7 +139,7 @@ export default observer(function TournamentSettings() {
           <CardContent>
             <TextField
               id="outlined-basic"
-              label="Назва турніру"
+              label={intl.formatMessage({ id: 'common.tournamentName' })}
               variant="outlined"
               fullWidth 
               value={tournamentName}
@@ -157,43 +147,46 @@ export default observer(function TournamentSettings() {
                 setTournamentName(event.target.value);
               }}
               color="success"
-              helperText="Назва турніру, наприклад - 'Кубок Київської області'"
+              helperText={intl.formatMessage({ id: 'placeholder.tournamentName' })}
               margin='normal'
             />
             <Grid container sx={{ justifyContent: 'center' }} spacing={2}>
-
               <Grid item xs={6} >
                 <FormControl fullWidth margin='normal'>
-                  {/* <InputLabel id="demo-simple-select-label">Дата проведення</InputLabel> */}
-                  <DatePicker label="Дата проведення" value={new Date(tournamentDate)}  onChange={setTournamentDate} />
-                  <FormHelperText>Дата проведення турніру</FormHelperText>
+                  <DatePicker
+                    label={intl.formatMessage({ id: 'common.tournamentDate' })}
+                    value={new Date(tournamentDate)}
+                    onChange={setTournamentDate}
+                  />
+                  <FormHelperText>{intl.formatMessage({ id: 'placeholder.tournamentDate' })}</FormHelperText>
                 </FormControl>
               </Grid>
 
               <Grid item xs={6}>
                 <FormControl fullWidth margin='normal'>
-                  <InputLabel id="demo-simple-select-label">Кількість столів</InputLabel>
+                  <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.tableNumber' })}</InputLabel>
                   <Select
                     labelId="demo-simple-select-label"
                     id="demo-simple-select"
                     value={tablesCount}
-                    label="Кількість столів"
+                    label={intl.formatMessage({ id: 'common.tableNumber' })}
                     onChange={(event) => setTablesCount(event.target.value)}
                   >
-                    {tableCountSelectOptions.map((table) => <MenuItem key={table.key} value={table.value}>{table.title}</MenuItem>)}
+                    {tableCountSelectOptions.map(
+                      (table) => <MenuItem key={table.key} value={table.value}>{intl.formatMessage({ id: table.titleKey })}</MenuItem>
+                    )}
                   </Select>
-                  <FormHelperText>Кількість столів, за якими буде проводитись боротьба</FormHelperText>
+                  <FormHelperText>{intl.formatMessage({ id: 'placeholder.tableNumber' })}</FormHelperText>
                 </FormControl>
               </Grid>
             </Grid>
 
             <Alert variant='filled' severity="info" sx={{ mt: 2, mb: 2 }}>
-              <AlertTitle>Увага</AlertTitle>
-              Турнірна категорія формуються з вагової категорії, класифікації та руки на якій відбудеться боротьба (ліва чи права). 
-              Наприклад, категорія "70кг, дорослі чоловіки, ліва рука" сформована з вагової категорії - "70 кг" та класифікації - "дорослі чоловіки".
+              <AlertTitle>{intl.formatMessage({ id: 'common.attention' })}</AlertTitle>
+              {intl.formatMessage({ id: 'categories.rulesExplanation' })}
             </Alert>
             <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
-              Вагові Категорії (у кілограмах):
+              {intl.formatMessage({ id: 'common.weightCategory' })} ({tournamentStore.weightUnit.label}):
             </Typography>
             <Paper
               elevation={0}
@@ -222,7 +215,7 @@ export default observer(function TournamentSettings() {
                     }
                   }}
                   onKeyDown={onAddCategory}
-                  placeholder='Додати'
+                  placeholder={intl.formatMessage({ id: 'common.add' })}
                   id="outlined-adornment-weight"
                   endAdornment={<InputAdornment position="end">{weightUnitLabel}</InputAdornment>}
                   aria-describedby="outlined-weight-helper-text"
@@ -251,7 +244,7 @@ export default observer(function TournamentSettings() {
             </Paper>
 
             <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
-              Класифікація:
+              {intl.formatMessage({ id: "commonn.classification" })}:
             </Typography>
             <Paper
               elevation={0}
@@ -268,7 +261,7 @@ export default observer(function TournamentSettings() {
               <FormControl sx={{ m: 0, width: '20ch', pr: 2 }} variant="outlined">
                 <TextField
                   id="outlined-basic"
-                  placeholder='Створити'
+                  placeholder={intl.formatMessage({ id: "common.create" })}
                   variant="outlined"
                   size='small'
                   value={classification}
@@ -315,201 +308,14 @@ export default observer(function TournamentSettings() {
                   size="large"
                   variant="outlined"
                 >
-                  Застосувати зміни
+                  {intl.formatMessage({ id: "common.saveChanges" })}
                 </Button>
             </Stack>
 
           </CardContent>
           
         </Card>
-      
       </Grid>
     </Grid>
   )
-
-  return (
-    <ThemeProvider theme={theme}>
-      <Container>
-        <TextField
-          onChange={(event) => {
-            tournamentStore.setTournamentName(event.target.value);
-          }}
-          margin="normal"
-          id="outlined-basic"
-          label="Назва турніру"
-          variant="outlined"
-          fullWidth
-        />
-        <DatePicker value={tournamentStore.tournamentDate} onChange={tournamentStore.setTournamentDate}  />
-        <Box sx={{ minWidth: 120 }}>
-          <FormControl fullWidth>
-            <InputLabel id="demo-simple-select-label">Кількість столів</InputLabel>
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={tournamentStore.tablesCount}
-              label="Кількість столів"
-              onChange={(event) => tournamentStore.setTablesCount(event.target.value)}
-            >
-              <MenuItem value={1}>1 Стіл</MenuItem>
-              <MenuItem value={2}>2 Столи</MenuItem>
-              <MenuItem value={3}>3 Столи</MenuItem>
-              <MenuItem value={4}>4 Столи</MenuItem>
-              <MenuItem value={5}>5 Столів</MenuItem>
-              <MenuItem value={6}>6 Столів</MenuItem>
-            </Select>
-            <FormHelperText>Кількість столів для проведення турніру</FormHelperText>
-          </FormControl>
-        </Box>
-        <Box>
-
-          <span>Вагові категорії:</span>
-          <TextField
-            onChange={(event) => {
-              setWeightCategory(event.target.value);
-            }}
-            value={weightCategory}
-            margin="normal"
-            id="outlined-basic"
-            label="категорія"
-            variant="outlined"
-          />
-          <Button 
-            onClick={() => {
-              tournamentStore.addWeightCategory(weightCategory);
-              setWeightCategory('');
-            }}
-            variant="text"
-          >
-            Додати категорію
-          </Button>
-          {tournamentStore.weightCategories.map(weight => <span>{weight} кг </span>)}
-
-        </Box>
-
-        <Box sx={{
-            display: 'flex',
-            alignItems: 'center',
-            border: 1
-        }}>
-          <span>Класифікація: </span>
-          <TextField
-            onChange={(event) => {
-              setClassification(event.target.value);
-            }}
-            value={classification}
-            margin="normal"
-            id="outlined-basic"
-            label="категорія"
-            variant="outlined"
-          />
-          <Button 
-            onClick={() => {
-              tournamentStore.addClassificationCategory(classification);
-              setClassification('');
-            }}
-            variant="text"
-          >
-            Додати класифікацію
-          </Button>
-          {tournamentStore.classificationCategories.map(classification => <span>{classification} , </span>)}
-
-
-        </Box>
-       
-
-        <Button 
-            onClick={() => {
-              setModalVisible(true)
-            }}
-            variant="text"
-          >
-            Додати турнірну категорію
-          </Button>
-
-      </Container>
-
-
-      <Modal
-        open={modalVisible}
-        onClose={() => setModalVisible(false)}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
-        <Box sx={{ minWidth: 120 }}>
-          <FormControl fullWidth>
-            <InputLabel id="demo-simple-select-label">Вага</InputLabel>
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={tournamentCategoryWeight}
-              label="Вага"
-              onChange={(event) => setTournamentCategoryWeight(event.target.value)}
-            >
-              {tournamentStore.weightCategories.map((weight) => (
-                <MenuItem value={weight}>{weight} kg</MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>Оберіть вагу в якій змагатимуться учасники категорії </FormHelperText>
-          </FormControl>
-        </Box>
-
-        <Box sx={{ minWidth: 120 }}>
-          <FormControl fullWidth>
-            <InputLabel id="demo-simple-select-label">Класифікація</InputLabel>
-            <Select
-              labelId="demo-simple-select-label"
-              id="demo-simple-select"
-              value={tournamentCategoryClassiication}
-              label="Вага"
-              onChange={(event) => setTournamentCategoryClassiication(event.target.value)}
-            >
-              {tournamentStore.classificationCategories.map((classification) => (
-                <MenuItem value={classification}>{classification}</MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>Вкажіть класифікацію </FormHelperText>
-          </FormControl>
-        </Box>
-        <Box>
-
-          <ToggleButtonGroup
-            color="primary"
-            value={tournamentCategoryHand}
-            exclusive
-            onChange={(_, newAlignment) => setTournamentCategoryHand(newAlignment)}
-            aria-label="Platform"
-          >
-            <ToggleButton value="right">Права рука</ToggleButton>
-            <ToggleButton value="left">Ліва рука</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Box>
-          <Button 
-              onClick={() => {
-                tournamentStore.addCategory({ weight: tournamentCategoryWeight, classification: tournamentCategoryClassiication, hand: tournamentCategoryHand })
-              }}
-              variant="text"
-            >
-              Створити категорію
-            </Button>
-        </Box>
-        </Box>
-      </Modal>
-    </ThemeProvider>
-  );
 })
-
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 400,
-  bgcolor: 'background.paper',
-  border: '2px solid #000',
-  boxShadow: 24,
-  p: 4,
-};

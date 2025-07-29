@@ -6,6 +6,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
+import { useIntl } from 'react-intl';
 
 
 const getMedalEmoji = (position) => {
@@ -17,6 +18,7 @@ const getMedalEmoji = (position) => {
 
 export const CompetitorRow = (props) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const intl = useIntl();
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -72,8 +74,8 @@ export const CompetitorRow = (props) => {
           'aria-labelledby': 'basic-button',
         }}
       >
-        <MenuItem onClick={onPressEdit}>Редагувати</MenuItem>
-        <MenuItem onClick={onPressDelete}>Видалити</MenuItem>
+        <MenuItem onClick={onPressEdit}>{intl.formatMessage({ id: 'buttons.edit'})}</MenuItem>
+        <MenuItem onClick={onPressDelete}>{intl.formatMessage({ id: 'buttons.delete'})}</MenuItem>
       </Menu>
       <Grid container columnSpacing={1} sx={{  pt:1, pb: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)'  }}>
         {columnConfig.firstName?.visible && (

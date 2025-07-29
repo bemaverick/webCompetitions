@@ -89,7 +89,9 @@ const TableContent = observer((props) => {
                   </MenuItem>
               ))}
             </Select>
-            <FormHelperText>{`${intl.formatMessage({ id: 'common.chooseCategoryToStartHint' })} №${currentTableIndex + 1}`}</FormHelperText>
+            <FormHelperText>
+              {intl.formatMessage({ id: 'common.chooseCategoryToStartHint' }, { tableNumber: currentTableIndex + 1 })}
+            </FormHelperText>
           </FormControl>
           <Button
             sx={{ mt: 2, mb: 3, }}
@@ -99,7 +101,7 @@ const TableContent = observer((props) => {
             }}
             variant='outlined'
           >
-            {intl.formatMessage({ id: 'common.startFight' })}
+            {intl.formatMessage({ id: 'common.startMatches' })}
           </Button>
           
           {isFinalsAvailable && (
@@ -115,7 +117,7 @@ const TableContent = observer((props) => {
                   labelId="demo-simple-select-label"
                   id="demo-simple-select"
                   value={tournamentStore.currentTable.category}
-                  label="Оберіть категорію"
+                  label={intl.formatMessage({ id: 'common.chooseCategory' })}
                   onChange={(event) => tournamentStore.setTableCategory(currentTableIndex, event.target.value)}
                 >
                   {Object.keys(tournamentStore.postponedCategoriesProgress)
@@ -129,7 +131,7 @@ const TableContent = observer((props) => {
                       </MenuItem>
                   ))}
                 </Select>
-                <FormHelperText>{intl.formatMessage({ id: 'common.chooseCategoryToContinueHint' })}</FormHelperText>
+                <FormHelperText>{intl.formatMessage({ id: 'common.chooseCategoryToContinueHint' }, { tableNumber: currentTableIndex + 1 })}</FormHelperText>
               </FormControl>
               <Button
                 sx={{ mt: 2 }}
@@ -138,7 +140,7 @@ const TableContent = observer((props) => {
                 }}
                 variant='outlined'
               >
-                  {intl.formatMessage({ id: 'common.continueFights' })}
+                  {intl.formatMessage({ id: 'common.resumeMatches' })}
                 </Button>
             </>
           )}
@@ -244,7 +246,7 @@ const TableContent = observer((props) => {
                 variant='contained'
                 disabled={!nextRoundButtonVisible || isLastRound}
               >
-                {intl.formatMessage({ id: 'common.continueLater' })}
+                {intl.formatMessage({ id: 'buttons.action.pause.category' })}
               </Button>
               <Typography variant='body2' textAlign={'center'} pt={2} color='#696969db'>
                 {intl.formatMessage({ id: 'hint.categoryContinueLater' })}

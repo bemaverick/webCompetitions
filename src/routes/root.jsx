@@ -17,6 +17,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import { useNavigate, useLocation } from "react-router-dom";
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import DataArrayIcon from '@mui/icons-material/DataArray';
 import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
 import CategoryIcon from '@mui/icons-material/Category';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
@@ -43,9 +44,10 @@ const drawerWidth = 260;
 const drawerItems = [
   {
     id: '1',
-    titleId: "common.tournament",
+    titleId: "common.brackets",
     path: "/",
-    icon: () => <EmojiEventsIcon />
+    // icon: () => <EmojiEventsIcon />
+    icon: () => <DataArrayIcon />
   },
   {
     id: '2',

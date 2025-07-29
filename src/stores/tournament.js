@@ -65,25 +65,25 @@ const weightCategoriesDefault = [
 const classificationCategoriesDefault = [
   {
     id: '1',
-    labelKey: 'classification.seniors',
+    labelKey: 'classification.senior',
   }, {
     id: '2',
     labelKey: 'classification.youth',
   }, {
     id: '3',
-    labelKey: 'classification.juniors',
+    labelKey: 'classification.junior',
   }, {
     id: '4',
-    labelKey: 'classification.masters',
+    labelKey: 'classification.master',
   }, {
     id: '5',
-    labelKey: 'classification.grandmasters',
+    labelKey: 'classification.grandmaster',
   }, {
     id: '6',
-    labelKey: 'classification.amateurs',
+    labelKey: 'classification.amateur',
   },    {
     id: '7',
-    labelKey: 'classification.professionals',
+    labelKey: 'classification.professional',
   },
 ]
 
@@ -113,7 +113,7 @@ class TournamentStore {
     );
   }
 
-  weightUnit = { value: 'kg', factor: 1, label: 'kg' };
+  weightUnit = { value: 'kg', factor: 1, label: 'kg', labelKey: "" };
 
   tournamentName = '';
 

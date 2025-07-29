@@ -37,6 +37,7 @@ import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
+import { useIntl } from 'react-intl';
 
 
 const ITEM_HEIGHT = 48;
@@ -53,6 +54,7 @@ const MenuProps = {
 
 export default observer(function TournamentCompetitors() {
   const location = useLocation();
+  const intl = useIntl();
   console.log('tournamentCategoryId', location)
 
   const [firstName, setFirstName] = React.useState('');
@@ -127,7 +129,7 @@ export default observer(function TournamentCompetitors() {
                 }}
                 margin="normal"
                 id="outlined-basic"
-                label="Ім'я"
+                label={intl.formatMessage({ id: 'common.firstName'})}
                 variant="outlined"
                 autoFocus={!!location?.state?.tournamentCategoryId}
                 value={firstName}
@@ -143,21 +145,23 @@ export default observer(function TournamentCompetitors() {
                 }}
                 margin="normal"
                 id="outlined-basic"
-                label="Прізвище"
+                label={intl.formatMessage({ id: 'common.lastName'})}
                 variant="outlined"
                 value={lastName}
               />
             </Grid>
-            <Grid item xs={5.5}>
+            <Grid item xs={4.5}>
               <FormControl size="small" fullWidth margin='normal'>
-                <InputLabel id="demo-simple-select-label">Категорії</InputLabel>
+                <InputLabel id="demo-simple-select-label">
+                  {intl.formatMessage({ id: 'common.categories'})}
+                </InputLabel>
                 <Select
                   labelId="demo-multiple-checkbox-label"
                   id="demo-multiple-checkbox"
                   multiple
                   value={selectedCategoryIds}
                   onChange={handleChange}
-                  input={<OutlinedInput  label="Категорії" />}
+                  input={<OutlinedInput label={intl.formatMessage({ id: 'common.categories'})} />}
                   renderValue={(selected) => selected.map((id) => tournamentStore.newTournamentCategories[id].categoryTitleFull).join(', ')}
                   MenuProps={MenuProps}
                 >
@@ -183,19 +187,19 @@ export default observer(function TournamentCompetitors() {
                 }}
                 margin="normal"
                 id="outlined-basic"
-                label="Вага учасника"
+                label={`${intl.formatMessage({ id: 'common.weight' })} (${tournamentStore.weightUnit.label})`}
                 variant="outlined"
                 value={weight}
               />
             </Grid>
             <Grid item xs={1.5} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
               <Box sx={{ pt: 1, }}>
-                <Tooltip title="Учасник зважився і підтвердив участь в категорії">
-                  <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Підтверджено" />
+                <Tooltip title={intl.formatMessage({ id: 'hint.participant.confimed' })}>
+                  <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label={intl.formatMessage({ id: 'common.confirmed'})} />
                 </Tooltip>
               </Box>
             </Grid>
-            <Grid item xs={1}>
+            <Grid item xs={2}>
               <Button
                 sx={{ height: '40px', mt: 2 }}
                 //size='small'
@@ -216,7 +220,7 @@ export default observer(function TournamentCompetitors() {
                   setCheckboxes({ present: false })
                 }}  
               >
-                Додати
+                {intl.formatMessage({ id: 'buttons.add.participant' })}
               </Button>
             </Grid>
           </Grid>
@@ -230,14 +234,14 @@ export default observer(function TournamentCompetitors() {
                   setSearchQuery(event.target.value);
                 }}
                 id="outlined-basic"
-                label="Пошук по учасниках"
+                label={intl.formatMessage({ id: 'search.by.participants' })}
                 variant="outlined"
                 value={searchQuery}
               />
             </Grid>
             <Grid item xs={3}>
               <FormControl size="small" fullWidth>
-                <InputLabel id="demo-simple-select-label">Показувати</InputLabel>
+                <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.show' })}</InputLabel>
                 <Select
                   labelId="demo-multiple-checkbox-label"
                   id="demo-multiple-checkbox"
@@ -245,12 +249,12 @@ export default observer(function TournamentCompetitors() {
                   onChange={(event) => {
                     setFilterParam(event.target.value);
                   }}
-                  input={<OutlinedInput  label="Показувати" />}
+                  input={<OutlinedInput label={intl.formatMessage({ id: 'common.show' })} />}
                   MenuProps={MenuProps}
                 >
-                  <MenuItem value={'all'}>Всі учасники</MenuItem>
-                  <MenuItem value={'present'}>Підтверджені участники</MenuItem>
-                  <MenuItem value={'preliminary'}>Попередній список</MenuItem>
+                  <MenuItem value={'all'}>{intl.formatMessage({ id: 'filter.participants.all' })}</MenuItem>
+                  <MenuItem value={'present'}>{intl.formatMessage({ id: 'filter.participants.confirmed' })}</MenuItem>
+                  <MenuItem value={'preliminary'}>{intl.formatMessage({ id: 'filter.participants.preliminary' })}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

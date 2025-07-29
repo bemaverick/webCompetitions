@@ -43,6 +43,8 @@ const genderTranslations = {
 }
 
 export default observer(function TournamentCategories() {
+  const intl = useIntl();
+  
   const [creatingCategoryModal, setCreatingCategoryModal] = React.useState(false);
   const [currentCategoryId, setCurrentCategoryId] = React.useState(
     Object.keys(tournamentStore.newTournamentCategories)[0] || ''
@@ -57,8 +59,8 @@ export default observer(function TournamentCategories() {
           <Toolbar />
           <Stack sx={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', p: 2, pb: 4 }}>
             <Typography variant="h6" component="h6" sx={{ mb: 2, textAlign: 'center' }}>
-              Тут буде список турнірних категорій, в яких відбуватиметься боротьба
-              <br />Тисни "Створити турнірну категорію" 👇
+              {intl.formatMessage({ id: 'categories.emptyState' })}
+              {/* <br />Тисни "{intl.formatMessage({ id: 'button.create.tournamentCategory' })}" 👇 */}
             </Typography>
             <Button
               onClick={() => setCreatingCategoryModal(true)}
@@ -66,7 +68,7 @@ export default observer(function TournamentCategories() {
               size="large"
               variant="contained"
             >
-              Створити турнірну категорію
+              {intl.formatMessage({ id: 'button.create.tournamentCategory' })}
             </Button>
           </Stack>
          
@@ -101,7 +103,7 @@ export default observer(function TournamentCategories() {
                   size="small"
                   variant="contained"
                 >
-                  Створити категорію
+                   {intl.formatMessage({ id: 'button.add.tournamentCategory' })}
                 </Button>
               </ListSubheader>
               {Object.values(tournamentStore.newTournamentCategories).map((category) => (
@@ -251,6 +253,7 @@ const CategoryDetailsView = observer((props) => {
   const [selectedCompetitor, setSelectedCompetitor] = React.useState(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const navigate = useNavigate();
+  const intl = useIntl();
 
   const navigateToCompetitors = () => {
     navigate('/tournamentParticipants', { state: { tournamentCategoryId: props.tournamentCategoryId }});
@@ -286,7 +289,7 @@ const CategoryDetailsView = observer((props) => {
               variant='contained'
               onClick={navigateToCompetitors}
             >
-              Додати учасника
+              {intl.formatMessage({ id: 'buttons.add.participant' })}
             </Button>
           </Grid>
         </Grid>
@@ -299,7 +302,7 @@ const CategoryDetailsView = observer((props) => {
               setSearchQuery(event.target.value);
             }}
             id="outlined-basic"
-            label="Пошук по учасниках"
+            label={intl.formatMessage({ id: 'search.by.participants' })}
             variant="outlined"
             value={searchQuery}
           />
@@ -331,7 +334,7 @@ const CategoryDetailsView = observer((props) => {
             variant='outlined'
             onClick={() => tournamentStore.removeTournamentCategory(props.tournamentCategoryId)}
             >
-              Видалити категорію
+              {intl.formatMessage({ id: 'buttons.remove.category' })}
           </Button>
         </Box>
       </Stack>
@@ -349,7 +352,7 @@ const CategoryDetailsView = observer((props) => {
   )
 })
 
-const modalChildreContainerStyle = {
+const modalChildrenContainerStyle = {
   position: 'absolute',
   top: '50%',
   left: '50%',
@@ -414,17 +417,19 @@ const ModalForCategories = observer((props) => {
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
    >
-      <Box sx={modalChildreContainerStyle}>
+      <Box sx={modalChildrenContainerStyle}>
         <Typography variant="h6" component="h6" sx={{ p: 0.5, pb: 3, textAlign: 'center' }}>
-            Конструктор категорій
+          {intl.formatMessage({ id: 'categories.title.builder'})}
         </Typography>
         <FormControl fullWidth>
-          <InputLabel id="demo-simple-select-label">Класифікація</InputLabel>
+          <InputLabel id="demo-simple-select-label">
+            {intl.formatMessage({ id: 'commonn.classification'})}
+          </InputLabel>
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
             value={classification.id}
-            label="Класифікація"
+            label={intl.formatMessage({ id: 'commonn.classification'})}
             //onChange={(event) => console.log('event', event.target.value,_.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value))}
             onChange={(event) => setClassification({ id: event.target.value, label: _.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value).label })}
           >
@@ -439,7 +444,7 @@ const ModalForCategories = observer((props) => {
           </Select>
         </FormControl>
         <Typography gutterBottom variant="body1" sx={{ mt: 2 }}>
-          Вагові категорії
+          {intl.formatMessage({ id: 'common.weightCategory'})}
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap">
           {tournamentStore.weightCategories.map((weightCategory) => {
@@ -462,29 +467,29 @@ const ModalForCategories = observer((props) => {
         <Grid container sx={{ justifyContent: 'center', mt: 2, }}>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
-              Cтать
+              {intl.formatMessage({ id: 'common.gender'})}
             </Typography>
-            <FormControlLabel control={<Checkbox color="success" checked={men} onChange={handleChange} name='men' />} label="чоловіки" />
-            <FormControlLabel control={<Checkbox color="success" checked={women} onChange={handleChange} name='women' />} label="жінки" />
+            <FormControlLabel control={<Checkbox color="success" checked={men} onChange={handleChange} name='men' />} label={intl.formatMessage({ id: 'common.gender.males'})} />
+            <FormControlLabel control={<Checkbox color="success" checked={women} onChange={handleChange} name='women' />} label= {intl.formatMessage({ id: 'common.gender.females'})} />
           </Grid>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
-              Рука
+              {intl.formatMessage({ id: 'common.hand'})}
             </Typography>
-            <FormControlLabel control={<Checkbox color="success" checked={left} onChange={handleChange} name='left' />} label="ліва" />
-            <FormControlLabel control={<Checkbox color="success" checked={right} onChange={handleChange} name='right' />} label="права" />
+            <FormControlLabel control={<Checkbox color="success" checked={left} onChange={handleChange} name='left' />} label={intl.formatMessage({ id: 'common.hand.left'})} />
+            <FormControlLabel control={<Checkbox color="success" checked={right} onChange={handleChange} name='right' />} label={intl.formatMessage({ id: 'common.hand.right'})} />
           </Grid>
         </Grid>
 
         <Stack direction="row" spacing={2} sx={{ justifyContent: "center", mt: 3, mb: 0 }}>
           <Button
-              onClick={onSave}
-              color="primary"
-              size="large"
-              variant="outlined"
-            >
-              Створити категорії
-            </Button>
+            onClick={onSave}
+            color="primary"
+            size="large"
+            variant="outlined"
+          >
+            {intl.formatMessage({ id: 'buttons.create.categories'})}
+          </Button>
         </Stack>
         
         {/* <Grid container sx={{ justifyContent: 'center', mt: 0 }}>
