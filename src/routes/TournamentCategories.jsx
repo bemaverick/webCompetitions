@@ -28,8 +28,8 @@ import { toJS } from 'mobx';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
 import { useIntl } from 'react-intl';
-
-
+import { CATEGORY_OPEN_ID } from '../constants/tournamenConfig';
+import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
 
 
 const handTranslations = {
@@ -60,7 +60,6 @@ export default observer(function TournamentCategories() {
           <Stack sx={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', p: 2, pb: 4 }}>
             <Typography variant="h6" component="h6" sx={{ mb: 2, textAlign: 'center' }}>
               {intl.formatMessage({ id: 'categories.emptyState' })}
-              {/* <br />Тисни "{intl.formatMessage({ id: 'button.create.tournamentCategory' })}" 👇 */}
             </Typography>
             <Button
               onClick={() => setCreatingCategoryModal(true)}
@@ -71,7 +70,6 @@ export default observer(function TournamentCategories() {
               {intl.formatMessage({ id: 'button.create.tournamentCategory' })}
             </Button>
           </Stack>
-         
         </Stack>
         <ModalForCategories
           modalVisible={creatingCategoryModal}
@@ -94,9 +92,9 @@ export default observer(function TournamentCategories() {
             >
               <ListSubheader
                 disableGutters
-                sx={{ display: 'flex', pt: 0, backgroundColor: '#fafafa', justifyContent: 'center', borderBottom: '2px solid #ddd', }}>
+                sx={{ display: 'flex', pt: 0, backgroundColor: 'transparent', justifyContent: 'center', borderBottom: '2px solid #ddd', }}
+              >
                 <Button
-                  
                   sx={{ mt: 2, mb: 2 }}
                   onClick={() => setCreatingCategoryModal(true)}
                   color="primary"
@@ -112,14 +110,16 @@ export default observer(function TournamentCategories() {
                   selected={currentCategoryId === category.id}
                   key={category.id}
                   id={category.id}
-                  title={category.categoryTitleShort}
-                  subTitle={`${_.upperFirst(genderTranslations[category.config.gender])}, ${handTranslations[category.config.hand]}`}
+                  //Senior Women 50 kg Left
+                  title={generateTournamentCategoryTitle(intl, category.config)}
+                  subTitle={generateTournamentCategoryTitle(intl, category.config, 'handOnly')}
                 />
               ))}
             </List>
           </Stack>
           <Divider orientation='vertical'></Divider>
           <CategoryDetailsView
+            setCurrentCategoryId={(id) => setCurrentCategoryId(id)}
             tournamentCategoryId={currentCategoryId}
           />
         </Stack>
@@ -131,106 +131,6 @@ export default observer(function TournamentCategories() {
       />    
     </>
   )
-
-
-  return (
-    <ThemeProvider theme={theme}>
-      {/* <Alert variant='outlined' severity="info" sx={{ m: 2, }}>
-        <AlertTitle>Увага</AlertTitle>
-        Турнірна категорія формуються з вагової категорії, класифікації та руки на якій відбудеться боротьба (ліва чи права). 
-        Наприклад, категорія "70кг, дорослі чоловіки, ліва рука" сформована з вагової категорії - "70 кг" та класифікації - "дорослі чоловіки".
-      </Alert> */}
-
-      <Grid container spacing={0} sx={{ height: '100vh', backgroundColor: '#eee', overflow: 'hidden' }}>
-        <Grid item xs={12} sx={{ flexGrow: 0 }}>
-          <Stack p={3} direction="row" justifyContent="center">
-            <Button
-              onClick={() => setCreatingCategoryModal(true)}
-              color="primary"
-              size="large"
-              variant="contained"
-            >
-              Створити турнірну категорію
-            </Button>
-          </Stack>
-        </Grid>
-
-        <Grid item xs={12} sx={{ border: '2px solid green', flexGrow: 0 }}>
-          <Grid container  spacing={0}>
-          <Grid item xs={3}
-             sx={{
-              overflow: 'auto',
-              flexGrow: 1, 
-            }}
-        >
-          <List
-         
-            dense={true}
-            //sx={{ pt: 0 }}
-          >
-            {Object.values(tournamentStore.newTournamentCategories).map((category) => (
-              <CategoryItem
-                key={category.id}
-                title={category.categoryTitleShort}
-                subTitle={`${_.upperFirst(genderTranslations[category.config.gender])}, ${handTranslations[category.config.hand]}`}
-              />
-            ))}
-          </List>
-        </Grid>
-        <Grid item xs={9} sx={{ border: '1px solid green' }}>
-        <List>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <DoneIcon />
-                </ListItemIcon>
-                <ListItemText primary="Inbox" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <DoneIcon />
-                </ListItemIcon>
-                <ListItemText primary="Drafts" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Grid>
-
-          </Grid>
-        </Grid>
-      </Grid>
-      <ModalForCategories modalVisible={creatingCategoryModal} onClose={() => setCreatingCategoryModal(false)} />
-    </ThemeProvider>
-  )
-
-  return (
-    <ThemeProvider theme={theme}>
-      <Container component="main" maxWidth="xm">
-        <Box
-          sx={{
-            marginTop: 8,
-            width: '90%'
-          }}
-        >
-          <h4>Турнірні Категорії</h4>
-
-          <div>
-            {Object.keys(tournamentStore.tournamentCategories).map((category) => (
-              <>
-                <p style={{ backgroundColor: '#eee', marginTop: '20px', padding: '12px' }}>{category}</p>
-                <BasicTable data={_.filter(tournamentStore.competitorsList, (competitor) => competitor.category == category)}>
-
-                </BasicTable>
-              </>
-            ))}
-          </div>
-
-        </Box>
-      </Container>
-    </ThemeProvider>
-  );
 })
 
 const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
@@ -246,14 +146,14 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
   )
 }
 
-
 const CategoryDetailsView = observer((props) => {
+  const navigate = useNavigate();
+  const intl = useIntl();
   const currentTournamentCategory = tournamentStore.newTournamentCategories[props.tournamentCategoryId];
+  const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
   const [editModalVisble, setEditModalVisble] = React.useState(false);
   const [selectedCompetitor, setSelectedCompetitor] = React.useState(null);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const navigate = useNavigate();
-  const intl = useIntl();
 
   const navigateToCompetitors = () => {
     navigate('/tournamentParticipants', { state: { tournamentCategoryId: props.tournamentCategoryId }});
@@ -261,7 +161,7 @@ const CategoryDetailsView = observer((props) => {
 
   const categoryCompetitorsList = React.useMemo(() => {
     let filtered = tournamentStore.competitorsList.filter(
-      (competitor => competitor.tournamentCategoryIds.includes(props.tournamentCategoryId) && competitor.present))
+      (competitor => competitor.tournamentCategoryIds.includes(props.tournamentCategoryId)))
     if (searchQuery.length > 0) {
       filtered = filtered.filter((competitor) => (
         competitor.firstName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -273,12 +173,17 @@ const CategoryDetailsView = observer((props) => {
 
   }, [props.tournamentCategoryId, tournamentStore.competitorsList, searchQuery]);
   //console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
+
+  const removeCategory = () => { 
+    props.setCurrentCategoryId(Object.keys(tournamentStore.newTournamentCategories)[0]);
+    tournamentStore.removeTournamentCategory(props.tournamentCategoryId)
+  }
   
   return (
     <>
       <Stack sx={{ flex: 9, flexDirection: 'column', p: 2 }}>
         <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
-          {currentTournamentCategory?.categoryTitleFull}
+          {generateTournamentCategoryTitle(intl, currentTournamentCategory.config, 'full')}
         </Typography>
         <Grid container justifyContent={'center'} sx={{ p: 2 }}>
           <Grid item xs={3}>
@@ -314,7 +219,7 @@ const CategoryDetailsView = observer((props) => {
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
                 present={competitor.present}
-                weight={`${competitor.weight} ${tournamentStore.weightUnit.label}`}
+                weight={`${competitor.weight} ${weightUnitLabel}`}
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
                 )}
@@ -332,7 +237,7 @@ const CategoryDetailsView = observer((props) => {
             color='error'
             size='small'
             variant='outlined'
-            onClick={() => tournamentStore.removeTournamentCategory(props.tournamentCategoryId)}
+            onClick={removeCategory}
             >
               {intl.formatMessage({ id: 'buttons.remove.category' })}
           </Button>
@@ -365,12 +270,13 @@ const modalChildrenContainerStyle = {
 
 const ModalForCategories = observer((props) => {
   const intl = useIntl();
-  const weightUnitLabel = tournamentStore.weightUnit.label;
-  const [classification, setClassification] = React.useState({ id: '', label: '' });
+  const [numberOfCategories, setNumberOfCategories] = React.useState(0);
+  const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
+  const [classification, setClassification] = React.useState(tournamentStore.classificationCategories[0]);
   const [selectedWeightCategories, setSelectedWeightCategories] = React.useState({});
   const [checkboxes, setCheckboxes] = React.useState({
     men: true,
-    women: true,
+    women: false,
     left: true,
     right: true,
   });
@@ -382,7 +288,6 @@ const ModalForCategories = observer((props) => {
       [event.target.name]: event.target.checked,
     });
   };
-
 
   const selectWeightCategory = (weightCategory) => {
     const copyOfSelectedCategories = _.cloneDeep(selectedWeightCategories);
@@ -404,12 +309,27 @@ const ModalForCategories = observer((props) => {
       men,
       women
     });
-    console.log('current', Object.keys(tournamentStore.newTournamentCategories)[0])
     props.setCurrentCategory(Object.keys(tournamentStore.newTournamentCategories)[0]);
-
   }
 
-  console.log('selectedWeightCategories', selectedWeightCategories)
+  React.useEffect(() => {
+    let totalCount = 0;
+    if (classification.id && !_.isEmpty(selectedWeightCategories) && Object.values(checkboxes).some(el => el)) {
+      const weightCategoriesNumber = Object.keys(selectedWeightCategories).length;
+      // const multiplier = Object.values(checkboxes).reduce((accumulator, currentValue) => accumulator + (currentValue ? 1 : 0), 0);
+      const handsNumber = left && right ? 2 : 1;
+      const genderNumber = men && women ? 2 : 1;
+      const multiplier = handsNumber * genderNumber;
+
+      console.log(multiplier, Object.values(checkboxes), checkboxes);
+      totalCount = weightCategoriesNumber * multiplier;
+    }
+    setNumberOfCategories(totalCount);
+  }, [checkboxes, classification, selectedWeightCategories])
+
+
+
+  //console.log('selectedWeightCategories', selectedWeightCategories)
   return (
     <Modal
       open={props.modalVisible}
@@ -423,13 +343,13 @@ const ModalForCategories = observer((props) => {
         </Typography>
         <FormControl fullWidth>
           <InputLabel id="demo-simple-select-label">
-            {intl.formatMessage({ id: 'commonn.classification'})}
+            {intl.formatMessage({ id: 'common.classification'})}
           </InputLabel>
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
             value={classification.id}
-            label={intl.formatMessage({ id: 'commonn.classification'})}
+            label={intl.formatMessage({ id: 'common.classification'})}
             //onChange={(event) => console.log('event', event.target.value,_.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value))}
             onChange={(event) => setClassification({ id: event.target.value, label: _.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value).label })}
           >
@@ -444,7 +364,7 @@ const ModalForCategories = observer((props) => {
           </Select>
         </FormControl>
         <Typography gutterBottom variant="body1" sx={{ mt: 2 }}>
-          {intl.formatMessage({ id: 'common.weightCategory'})}
+          {intl.formatMessage({ id: 'common.select.weightCategories'})}:
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap">
           {tournamentStore.weightCategories.map((weightCategory) => {
@@ -455,7 +375,7 @@ const ModalForCategories = observer((props) => {
                 key={weightCategory.id}
                 color={isSelected ? 'success' : 'default'}
                // label={`${weightCategory.value} ${weightUnitLabel}`}
-                label={weightCategory.id === 'xxx' ? weightCategory.value: `${weightCategory.value} ${weightUnitLabel}`}
+                label={weightCategory.id === CATEGORY_OPEN_ID ? intl.formatMessage({ id: "category.open" }) : `${weightCategory.value} ${weightUnitLabel}`}
                 onClick={() => selectWeightCategory(weightCategory)}
                 deleteIcon={isSelected ? <DoneIcon /> : undefined}
                 onDelete={isSelected ? () => selectWeightCategory(weightCategory) : undefined}
@@ -467,21 +387,23 @@ const ModalForCategories = observer((props) => {
         <Grid container sx={{ justifyContent: 'center', mt: 2, }}>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
-              {intl.formatMessage({ id: 'common.gender'})}
+              {intl.formatMessage({ id: 'common.sex'})}:
             </Typography>
-            <FormControlLabel control={<Checkbox color="success" checked={men} onChange={handleChange} name='men' />} label={intl.formatMessage({ id: 'common.gender.males'})} />
-            <FormControlLabel control={<Checkbox color="success" checked={women} onChange={handleChange} name='women' />} label= {intl.formatMessage({ id: 'common.gender.females'})} />
+            <FormControlLabel control={<Checkbox color="success" checked={men} onChange={handleChange} name='men' />} label={intl.formatMessage({ id: 'common.sex.men'})} />
+            <FormControlLabel control={<Checkbox color="success" checked={women} onChange={handleChange} name='women' />} label= {intl.formatMessage({ id: 'common.sex.women'})} />
           </Grid>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
-              {intl.formatMessage({ id: 'common.hand'})}
+              {intl.formatMessage({ id: 'common.hand'})}:
             </Typography>
             <FormControlLabel control={<Checkbox color="success" checked={left} onChange={handleChange} name='left' />} label={intl.formatMessage({ id: 'common.hand.left'})} />
             <FormControlLabel control={<Checkbox color="success" checked={right} onChange={handleChange} name='right' />} label={intl.formatMessage({ id: 'common.hand.right'})} />
           </Grid>
         </Grid>
-
-        <Stack direction="row" spacing={2} sx={{ justifyContent: "center", mt: 3, mb: 0 }}>
+        <Typography variant="subtitle1" component="h6" sx={{ pt: 2, textAlign: 'center' }}>
+          {intl.formatMessage({ id: 'hint.tournamentCategories.count.beGenerated'})} [{numberOfCategories}]
+        </Typography>
+        <Stack direction="row" spacing={2} sx={{ justifyContent: "center", mt: 1.5, mb: 0 }}>
           <Button
             onClick={onSave}
             color="primary"
@@ -491,58 +413,7 @@ const ModalForCategories = observer((props) => {
             {intl.formatMessage({ id: 'buttons.create.categories'})}
           </Button>
         </Stack>
-        
-        {/* <Grid container sx={{ justifyContent: 'center', mt: 0 }}>
-          <Grid item xs={10} ml={2} mr={2} >
-            <Card raised>
-              <CardContent>
-                <Stack direction="row" spacing={0} sx={{  justifyContent: "center" }}>
-                  <Button
-                      onClick={() => setCreatingCategoryModal(true)}
-                      color="primary"
-                      size="large"
-                      variant="contained"
-                    >
-                      Створити турнірну категорію
-                    </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid> */}
       </Box>
     </Modal>
   )
-})
-
-function BasicTable(props) {
-  return (
-    <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }} aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell>Прізвище</TableCell>
-            <TableCell align="right">Ім'я</TableCell>
-            <TableCell align="right">Вага</TableCell>
-            <TableCell align="right">Категорія</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {props.data.map((row) => (
-            <TableRow
-              key={row.id}
-              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-            >
-              <TableCell component="th" scope="row">
-                {row.lastName}
-              </TableCell>
-              <TableCell align="right">{row.firstName}</TableCell>
-              <TableCell align="right">{row.weight}</TableCell>
-              <TableCell align="right">{row.category}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-}
+});

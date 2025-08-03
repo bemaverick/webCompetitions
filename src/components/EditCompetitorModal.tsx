@@ -3,11 +3,12 @@ import Grid from '@mui/material/Grid';
 import { Button, MenuItem, Modal, FormControl, Select, InputLabel, Box, OutlinedInput, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-
+import { useIntl } from 'react-intl';
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
 import DoneIcon from '@mui/icons-material/Done';
 import _ from 'lodash';
+import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
 
 type EditCompetitorModalProps = {
   modalVisible: boolean;
@@ -23,7 +24,8 @@ type EditCompetitorModalProps = {
 }
 
 export const EditCompetitorModal = observer((props: EditCompetitorModalProps): any => {
-  const weightUnitLabel = tournamentStore.weightUnit.label;
+  const intl = useIntl();
+  const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
   const [firstName, setFirstName] = React.useState(props.competitor?.firstName);
   const [lastName, setLastName] = React.useState(props.competitor?.lastName);
   const [weight, setWeight] = React.useState(props.competitor?.weight);
@@ -75,7 +77,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
     >
       <Box sx={modalChildreContainerStyle}>
         <Typography variant="h6" component="h6" sx={{ p: 0.5, pb: 3, textAlign: 'center' }}>
-            Редагування користувача
+          {intl.formatMessage({ id: 'common.athlete.edit' })}
         </Typography>
         <Grid container  spacing={1}>
           <Grid item xs={2}>
@@ -87,7 +89,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               }}
               margin="normal"
               id="outlined-basic"
-              label="Ім'я"
+              label={intl.formatMessage({ id: 'common.firstName' })}
               variant="outlined"
               value={firstName}
             />
@@ -101,28 +103,30 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               }}
               margin="normal"
               id="outlined-basic"
-              label="Прізвище"
+              label={intl.formatMessage({ id: 'common.lastName' })}
               variant="outlined"
               value={lastName}
             />
           </Grid>
           <Grid item xs={5}>
             <FormControl size="small" fullWidth margin='normal'>
-              <InputLabel id="demo-simple-select-label">Категорії</InputLabel>
+              <InputLabel id="demo-simple-select-label">
+                {intl.formatMessage({ id: 'common.categories' })}
+              </InputLabel>
               <Select
                 labelId="demo-multiple-checkbox-label"
                 id="demo-multiple-checkbox"
                 multiple
                 value={selectedCategoryIds}
                 onChange={handleChange}
-                input={<OutlinedInput  label="Категорії" />}
-                renderValue={(selected) => selected.map((id) => tournamentStore.newTournamentCategories[id].categoryTitleFull).join(', ')}
+                input={<OutlinedInput  label={intl.formatMessage({ id: 'common.categories' })} />}
+                renderValue={(selected) => selected.map((id) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[id].config, 'full')).join(', ')}
                 MenuProps={MenuProps}
               >
                 {Object.values(tournamentStore.newTournamentCategories).map((category) => (
                   <MenuItem key={category.id} value={category.id}>
                     <Checkbox checked={selectedCategoryIds.indexOf(category.id) > -1} />
-                    <ListItemText primary={category.categoryTitleFull}/>
+                    <ListItemText primary={generateTournamentCategoryTitle(intl, category.config, 'full')}/>
                   </MenuItem>
                 ))}
               </Select>
@@ -141,15 +145,15 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               }}
               margin="normal"
               id="outlined-basic"
-              label="Вага учасника"
+              label={`${intl.formatMessage({ id: 'common.weight' })} (${weightUnitLabel})`}
               variant="outlined"
               value={weight}
             />
           </Grid>
           <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
             <Box sx={{ pt: 1, }}>
-              <Tooltip title="Учасник зважився і підтвердив участь в категорії">
-                <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label="Підтверджено" />
+              <Tooltip title={intl.formatMessage({ id: 'hint.participant.confimed' })}>
+                <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label={intl.formatMessage({ id: 'common.confirmed'})} />
               </Tooltip>
             </Box>
           </Grid>
@@ -162,7 +166,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
             variant='outlined'
             onClick={onSave}  
           >
-            Застосувати зміни
+            {intl.formatMessage({ id: 'buttons.apply.changes' })}
           </Button>
         </Box>
       </Box>

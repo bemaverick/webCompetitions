@@ -29,6 +29,7 @@ import { tournamentStore } from '../stores/tournament';
 import { toJS  } from 'mobx';
 import { ConfirmProvider, useConfirm } from "material-ui-confirm";
 import { useIntl } from 'react-intl'
+import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
 
 export default observer(function Tournament() {
   const intl = useIntl();
@@ -85,7 +86,7 @@ const TableContent = observer((props) => {
                     value={categoryId}
                   >
                     {/* {tournamentStore.newTournamentCategories[categoryId].categoryTitleFull} */}
-                    Senior {tournamentStore.newTournamentCategories[categoryId].config.weightCategory.value} kg, mans, left hand
+                    {generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[categoryId].config, 'full')}
                   </MenuItem>
               ))}
             </Select>
@@ -127,7 +128,7 @@ const TableContent = observer((props) => {
                         key={categoryId}
                         value={categoryId}
                       >
-                        {tournamentStore.newTournamentCategories[categoryId].categoryTitleFull}
+                        {generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[categoryId].config, 'full')}
                       </MenuItem>
                   ))}
                 </Select>
@@ -206,7 +207,7 @@ const TableContent = observer((props) => {
     const postponeFinalButton = isFinal && !isSuperFinal;
 
     //const categoryLabel= `${intl.formatMessage({ id: 'common.category' })} ${tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].categoryTitleFull}`
-    const categoryLabel= `${intl.formatMessage({ id: 'common.category' })} Senior 100+ kg, mans, left hand`
+    const categoryLabel= generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].config, 'full')
 
     return (
       <>
@@ -450,7 +451,7 @@ const Pair = (props) => {
             component="span"
             variant="body2"
           >
-            {intl.formatMessage({ id: 'common.currentPair' })}
+            {intl.formatMessage({ id: 'common.currentMatch' })}
         </Typography> 
       </Box>
       )}

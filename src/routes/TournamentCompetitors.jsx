@@ -38,8 +38,11 @@ import { tournamentStore } from '../stores/tournament';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
 import { useIntl } from 'react-intl';
+import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { FAKE_competitorsList } from '../constants/tournamenConfig';
 
 
+let index = 0;
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
 const MenuProps = {
@@ -54,19 +57,20 @@ const MenuProps = {
 
 export default observer(function TournamentCompetitors() {
   const location = useLocation();
+  const navigate = useNavigate();
   const intl = useIntl();
   console.log('tournamentCategoryId', location)
+  const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
 
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [weight, setWeight] = React.useState('');
-  const [category, setCategory] = React.useState('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(location.state?.tournamentCategoryId ? [location.state.tournamentCategoryId] : []);
   const [editModalVisble, setEditModalVisble] = React.useState(false);
   const [selectedCompetitor, setSelectedCompetitor] =  React.useState(null);
   const [checkboxes, setCheckboxes] = React.useState({
-    present: false,
+    present: true,
   });
   const [filterParam, setFilterParam] = React.useState('all');
 
@@ -78,11 +82,6 @@ export default observer(function TournamentCompetitors() {
       [event.target.name]: event.target.checked,
     });
   };
-
-  
-
-  const navigate = useNavigate();
-  console.log('tournamentCategoryId', location)
 
   const handleChange = (event) => {
     const {
@@ -112,6 +111,30 @@ export default observer(function TournamentCompetitors() {
     return filtered;
 
   }, [tournamentStore.competitorsList, searchQuery, filterParam]);
+
+  const addCompetitor = () => {
+    let firstNameTmp = firstName;
+    let lastNameTmp = lastName;
+    const weightTmp = 70;
+    console.log('firs', firstName, lastName, firstName === lastName === '')
+    if (firstName === '' && lastName === '') {
+      firstNameTmp = FAKE_competitorsList[index].firstName;
+      lastNameTmp = FAKE_competitorsList[index].lastName;
+      index++;
+    }
+    tournamentStore.addCompetitor({ 
+      firstName: firstNameTmp,
+      lastName: lastNameTmp,
+      weight: weightTmp,
+      tournamentCategoryIds: selectedCategoryIds,
+      present: checkboxes.present
+    });
+    setFirstName('');
+    setLastName('');
+    setWeight('');
+    // setSelectedCategoryIds([]);
+    //setCheckboxes({ present: false })
+  }
 
 
   return (
@@ -162,13 +185,13 @@ export default observer(function TournamentCompetitors() {
                   value={selectedCategoryIds}
                   onChange={handleChange}
                   input={<OutlinedInput label={intl.formatMessage({ id: 'common.categories'})} />}
-                  renderValue={(selected) => selected.map((id) => tournamentStore.newTournamentCategories[id].categoryTitleFull).join(', ')}
+                  renderValue={(selected) => selected.map((id) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[id].config, 'full')).join(', ')}
                   MenuProps={MenuProps}
                 >
                   {Object.values(tournamentStore.newTournamentCategories).map((category) => (
                     <MenuItem key={category.id} value={category.id}>
                       <Checkbox checked={selectedCategoryIds.indexOf(category.id) > -1} />
-                      <ListItemText primary={category.categoryTitleFull}/>
+                      <ListItemText primary={generateTournamentCategoryTitle(intl, category.config, 'full')}/>
                     </MenuItem>
                   ))}
                 </Select>
@@ -187,7 +210,7 @@ export default observer(function TournamentCompetitors() {
                 }}
                 margin="normal"
                 id="outlined-basic"
-                label={`${intl.formatMessage({ id: 'common.weight' })} (${tournamentStore.weightUnit.label})`}
+                label={`${intl.formatMessage({ id: 'common.weight' })} (${weightUnitLabel})`}
                 variant="outlined"
                 value={weight}
               />
@@ -205,20 +228,7 @@ export default observer(function TournamentCompetitors() {
                 //size='small'
                 fullWidth
                 variant='outlined'
-                onClick={() => {
-                  tournamentStore.addCompetitor({ 
-                    firstName,
-                    lastName,
-                    weight,
-                    tournamentCategoryIds: selectedCategoryIds,
-                    present: checkboxes.present
-                  });
-                  setFirstName('');
-                  setLastName('');
-                  setWeight('');
-                  setSelectedCategoryIds([]);
-                  setCheckboxes({ present: false })
-                }}  
+                onClick={addCompetitor}  
               >
                 {intl.formatMessage({ id: 'buttons.add.participant' })}
               </Button>
@@ -270,13 +280,13 @@ export default observer(function TournamentCompetitors() {
                 }}
                 onDelete={() => tournamentStore.removeCompetitorFromList(competitor.id)}
                 key={competitor.id}
-                position={index + 1}
+                position={сompetitorsList.length - index}
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
                 present={competitor.present}
                 weight={competitor.weight} 
                 categories={competitor.tournamentCategoryIds.map(
-                  (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
+                  (tournamentId) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentId].config, 'full')
                  )}
               />
             ))}

@@ -4,88 +4,8 @@ import { makeAutoObservable, autorun, toJS } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
-
-const FAKE_competitorsList = [
-  { firstName: 'Сергій', lastName: 'Іванчук', weight: '88', category: '90_man_left', id: '1'},
-  { firstName: 'Рустам', lastName: 'Стерненко', weight: '88', category: '90_man_left', id: '2'},
-  { firstName: 'Антон', lastName: 'Умаров', weight: '88', category: '90_man_left', id: '3'},
-  { firstName: 'Андрій', lastName: 'Олійник', weight: '90', category: '90_man_left', id: '4'},
-  // { firstName: 'Іван', lastName: 'Драганчук', weight: '88', category: '90_man_left', id: '5'},
-  // { firstName: 'Павло', lastName: 'Курильчик', weight: '93', category: '90_man_left', id: '6'},
-  // { firstName: 'Тарас', lastName: 'Сергійчук', weight: '88', category: '90_man_left', id: '7'},
-  // { firstName: 'Олег', lastName: 'Попов', weight: '90', category: '90_man_left', id: '8'},
-  // { firstName: 'Сергій', lastName: 'Дьомін', weight: '88', category: '90_man_left', id: '9'},
-  // { firstName: 'Микола', lastName: 'Попенко', weight: '88', category: '90_man_left', id: '10'},
-  // { firstName: 'Степан', lastName: 'Савченко', weight: '87', category: '90_man_left', id: '11'},
-  // { firstName: 'Платон', lastName: 'Раменко', weight: '88', category: '90_man_left', id: '12'},
-  { firstName: 'Мирослав', lastName: 'Федоренко', weight: '85', category: '90_man_left', id: '13'},
-  { firstName: 'Кирило', lastName: 'Буданов', weight: '88', category: '90_man_left', id: '14'},
-  { firstName: 'Ренат', lastName: 'Ізмаїлов', weight: '86', category: '90_man_left', id: '15'},
-  { firstName: 'Максим', lastName: 'Куценко', weight: '90', category: '90_man_left', id: '16'},
-  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '90_man_left', id: '17'},
-  { firstName: 'Кирило', lastName: 'Буданов', weight: '88', category: '110_man_right', id: '18'},
-  { firstName: 'Ренат', lastName: 'Ізмаїлов', weight: '86', category: '110_man_right', id: '19'},
-  { firstName: 'Максим', lastName: 'Куценко', weight: '90', category: '110_man_right', id: '16'},
-  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '110_man_right', id: '20'},
-]
-
-
-//  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '110_man_right', id: '20', stats: { 0: { result: 'win' }}},
-//result can be win|lose|idle
-
-
-const weightCategoriesDefault = [
-  {
-    id: '60',
-    value: '60',
-  }, {
-    id: '70',
-    value: '70',
-  }, {
-    id: '80',
-    value: '80',
-    
-  }, {
-    id: '90',
-    value: '90',
-    
-  }, {
-    id: '100',
-    value: '100',
-    
-  }, {
-    id: '100+',
-    value: '100+',
-  }, {
-    id: 'xxx',
-    valueKey: 'unit.weight.kilogram',
-  }
-]
-
-const classificationCategoriesDefault = [
-  {
-    id: '1',
-    labelKey: 'classification.senior',
-  }, {
-    id: '2',
-    labelKey: 'classification.youth',
-  }, {
-    id: '3',
-    labelKey: 'classification.junior',
-  }, {
-    id: '4',
-    labelKey: 'classification.master',
-  }, {
-    id: '5',
-    labelKey: 'classification.grandmaster',
-  }, {
-    id: '6',
-    labelKey: 'classification.amateur',
-  },    {
-    id: '7',
-    labelKey: 'classification.professional',
-  },
-]
+import { CATEGORY_STATE, CLASSIFICATION_LIST_DEFAULT, HANDS, SEX, TABLE_INITIAL_STATE, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
+import { createTournamentCategoryConfig } from '../utils/categoriesUtils';
 
 class TournamentStore {
   constructor() {
@@ -113,7 +33,7 @@ class TournamentStore {
     );
   }
 
-  weightUnit = { value: 'kg', factor: 1, label: 'kg', labelKey: "" };
+  weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
 
   tournamentName = '';
 
@@ -125,102 +45,47 @@ class TournamentStore {
 
   //groupA[competitorIndex].results[roundId].result === win || false
   tables = {
-    0: {
-      category: '',
-      state: 'idle', //idle, started, or finished
-      rounds: {
-        0: {
-          groupA: [],
-          groupB: [],
-          finalist: null,
-          semifinalist: null,
-        }
-      },
-      selectedRound: 0
-    },
-    1: {
-      category: '',
-      state: 'idle',
-      rounds: {
-        0: {
-          groupA: [],
-          groupB: [],
-          finalist: null,
-          semifinalist: null,
-        }
-      },
-      selectedRound: 0
-    },
-    2: {
-      category: '',
-      state: 'idle',
-      rounds: {
-        0: {
-          groupA: [],
-          groupB: [],
-          finalist: null,
-          semifinalist: null,
-        }
-      },
-      selectedRound: 0
-    },
+    0: TABLE_INITIAL_STATE,
+    1: TABLE_INITIAL_STATE,
+    2: TABLE_INITIAL_STATE,
   }
 
-  weightCategories = weightCategoriesDefault;
+  weightCategories = WEIGHT_CATEGORIES_DEFAULT;
 
-  classificationCategories = classificationCategoriesDefault;
+  classificationCategories = CLASSIFICATION_LIST_DEFAULT;
 
-  tournamentCategories = {};
+//tournamentCategories = {};
 
-  newTournamentCategories = {
+  newTournamentCategories = {}; // should be renamed
 
-  }
-
-  postponedCategoriesProgress = {
-
-  }
+  postponedCategoriesProgress = {}; // when user presses pause category progress is saving here
 
   competitorsList = [];
-  // competitorsList = FAKE_competitorsList;
 
-  results = {};
+  results = {}; // can be renamed to tournament results;
 
   setTournamentBasicSettings = ({ 
     tournamentName,
     tournamentDate,
     tablesCount,
     weightCategories,
-    classificationCategories
+    classificationCategories,
+    weightUnit,
   }) => {
     this.tournamentName = tournamentName;
     this.tournamentDate = tournamentDate;
     this.weightCategories = weightCategories;
     this.classificationCategories = classificationCategories;
     this.setTablesConfig(tablesCount);
+    this.weightUnit = weightUnit;
   }
 
-  // setTournamentName = (name) => this.tournamentName = name;
-
-  // setTournamentDate = (date) => this.tournamentDate = date;
   setTablesConfig = (tablesCount) => {
     this.tablesCount = tablesCount;  
     this.tables = {}; //reset and then fill                
-    for (let i = 0; i < tablesCount; i ++ ) {
-      this.tables[i] = {    
-        state: 'idle',
-        category: '',
-        rounds: {
-          0: {
-            groupA: [],     
-            groupB: [],
-            finalist: null,
-            semifinalist: null,
-        }
-        },
-        selectedRound: 0,
-      } 
+    for (let i = 0; i < tablesCount; i++ ) {
+      this.tables[i] = TABLE_INITIAL_STATE;
     }
-
   };
 
   setCurrentTableIndex = (index) => this.currentTableIndex = index;
@@ -237,73 +102,28 @@ class TournamentStore {
 
   createTournamentCategories = ({ classification, weightCategories, leftHand, rightHand, men, women }) => {
     const createdCategories = {};
-
     for (const [key, category] of Object.entries(weightCategories)) {
-      const categoryTitleShort = `${classification.label} ${category.value} ${this.weightUnit.label}`;
+      // const categoryTitleShort = `${classification.label} ${category.value} ${this.weightUnit.label}`;
+      // const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, mans, left hand`;
       const configDefaults = {
         classification: _.cloneDeep(classification),
         weightCategory: _.cloneDeep(category),
       }
       if (leftHand && men) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, mans, left hand`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-          config: {
-            ...configDefaults,
-            hand: 'left',
-            gender: 'men',
-          },
-          state: 'idle'
-        };
+        createdCategories[id] = createTournamentCategoryConfig(id, HANDS.LEFT, SEX.MEN, configDefaults);
       }
       if (rightHand && men) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, mans, right hand`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-          config: {
-            ...configDefaults,
-            hand: 'right',
-            gender: 'men',
-          },
-          state: 'idle'
-        };
+        createdCategories[id] = createTournamentCategoryConfig(id, HANDS.RIGHT, SEX.MEN, configDefaults);
       }
       if (leftHand && women) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, women, left hand`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-          config: {
-            ...configDefaults,
-            hand: 'left',
-            gender: 'women',
-          },
-          state: 'idle'
-        };
+        createdCategories[id] = createTournamentCategoryConfig(id, HANDS.LEFT, SEX.WOMEN, configDefaults);
       }
       if (rightHand && women) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, women, right hand`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-
-          config: {
-            ...configDefaults,
-            hand: 'right',
-            gender: 'women',
-          },
-          state: 'idle'
-        };
+        createdCategories[id] = createTournamentCategoryConfig(id, HANDS.RIGHT, SEX.WOMEN, configDefaults);
       }
     }
   
@@ -311,9 +131,6 @@ class TournamentStore {
       ...createdCategories,
       ...this.newTournamentCategories,
     };
-
-    console.log(classification, Object.values(weightCategories), leftHand, rightHand, men, women)
-    console.log("createdCategories", createdCategories)
   }
 
   removeTournamentCategory = (tournamentCategoryId) => {
@@ -408,7 +225,9 @@ class TournamentStore {
       ({ present, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && present
     );
     const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: 'idle' }}}))
-    this.currentTable.rounds[0].groupA = _.shuffle(groupA);
+   // this.currentTable.rounds[0].groupA = _.shuffle(groupA);
+    this.currentTable.rounds[0].groupA = groupA;
+    
     this.currentTable.selectedRound = 0;
     this.currentRound.groupB = [];
     this.currentRound.finalist = null;

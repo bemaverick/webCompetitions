@@ -32,6 +32,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate  } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
+import { jsPDF } from "jspdf";
+
 
 const theme = createTheme();
 
@@ -58,6 +60,27 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
   )
 }
 
+function createHeaders(keys) {
+  var result = [];
+  for (var i = 0; i < keys.length; i += 1) {
+    result.push({
+      id: keys[i],
+      name: keys[i],
+      prompt: keys[i],
+      width: 65,
+      align: "center",
+      padding: 0
+    });
+  }
+  return result;
+}
+
+var headers = createHeaders([
+  "id",
+  "game_group",
+  "game_name",
+]);
+
 export default observer(function TournamentResults() {
   const [currentCategoryId, setCurrentCategoryId] = React.useState('');
 
@@ -67,6 +90,33 @@ export default observer(function TournamentResults() {
     console.log(event)
   };
 
+  const generateResultPDF = () => {
+     console.log('generateResultPDF');
+     const items = [];
+     _.map(tournamentStore.results, (category, id) => {
+      category.map(el => {
+
+        items.push({
+          id: (id).toString(),
+          game_group: el.firstName,
+          game_name: el.lastName,
+        })
+      });
+      console.log(items);
+      console.log(headers)
+
+    }) 
+    const doc = new jsPDF({ putOnlyUsedFonts: true, orientation: "landscape" });
+    doc.addFont("../assets/PTSans-Regular.ttf", "PTSans", "normal");
+
+    doc.setFont("PTSans"); // set font
+    doc.setFontSize(10);
+    doc.table(1, 1, items, headers, { autoSize: true });
+    doc.save("a4.pdf")
+    
+   
+  }
+
 
   return (
     <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
@@ -74,7 +124,17 @@ export default observer(function TournamentResults() {
       <Button
         sx={{ mt: 2, mb: 3, }}
         onClick={() => {
-          tournamentStore.removeResults();
+          generateResultPDF();
+          // tournamentStore.removeResults();
+          // Default export is a4 paper, portrait, using millimeters for units
+          // try {
+          //   const doc = new jsPDF();
+
+          //   doc.text("Hello world!", 10, 10);
+          //   doc.save("a4.pdf")
+          // } catch (error) {
+            
+          // }
         }}
         variant='outlined'
       >

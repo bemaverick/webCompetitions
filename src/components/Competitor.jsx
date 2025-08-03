@@ -41,27 +41,25 @@ export const CompetitorRow = (props) => {
   const { columnConfig = {
     firstName: {
       visible: true,
-      flex: 2.5
+      flex: 1.5
     },
     lastName: {
       visible: true,
-      flex: 2.5
+      flex: 2
     },
     weight: {
       visible: true,
-      flex: 0.5
+      flex: 1
     },
     present: {
       visible: true,
-      flex: 1.5
+      flex: 2.5
     },
     categories: {
       visible: true,
       flex: 5
     },
   } } = props;
-  console.log(props.present)
-
 
   return (
     <>
@@ -102,7 +100,7 @@ export const CompetitorRow = (props) => {
         {columnConfig.present?.visible && (
           <Grid item xs={columnConfig.present.flex } sx={{ }}> 
             <Typography textAlign={'center'} variant="body1">
-              {props.present ? "Підтверджено" : "Попередня заявка"}
+              {intl.formatMessage({ id: props.present ? 'common.confirmed' : 'common.unConfirmed'})}
             </Typography>
           </Grid>
         )}

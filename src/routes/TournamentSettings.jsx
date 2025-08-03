@@ -34,67 +34,31 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { v4 as uuidv4 } from 'uuid';
 import _ from "lodash"
 import { useIntl } from 'react-intl';
+import { CATEGORY_OPEN_ID, TABLES_SELECT_CONFIG, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_CATEGORIES_DEFAULT_LBS, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
+
 
 const ListItem = styled('li')(({ theme }) => ({
   margin: theme.spacing(0.5),
 }));
 
-
-const tableCountSelectOptions = [
-  {
-    key: 0,
-    value: 1,
-    titleKey: 'tables.count.one'
-
-  }, {
-    key: 1,
-    value: 2,
-    titleKey: 'tables.count.two'
-
-  }, {
-    key: 2,
-    value: 3,
-    titleKey: 'tables.count.three'
-    
-  }, {
-    key: 3,
-    value: 4,
-    titleKey: 'tables.count.four'
-    
-  }, {
-    key: 4,
-    value: 5,
-    titleKey: 'tables.count.five'
-    
-  }, {
-    key: 5,
-    value: 6,
-    titleKey: 'tables.count.six'
-  },
-]
-
 //TODO
-
 // add validaton to prevent adding the same categories and classifications
 
-
 export default observer(function TournamentSettings() {
+  const auth = useAuth();
+  
   const intl = useIntl();
-  const weightUnitLabel = tournamentStore.weightUnit.label;
   const [tournamentName, setTournamentName] = React.useState(tournamentStore.tournamentName);
   const [tournamentDate, setTournamentDate] = React.useState(tournamentStore.tournamentDate);
   const [tablesCount, setTablesCount] = React.useState(tournamentStore.tablesCount);
+  const [weightUnit, setWeightUnit] = React.useState(tournamentStore.weightUnit);
   const [weightCategory, setWeightCategory] = React.useState('');
   const [weightCategories, setWeightCategories] = React.useState(tournamentStore.weightCategories);
   const [classification, setClassification] = React.useState('');
   const [classificationCategories, setClassificationCategories] = React.useState(tournamentStore.classificationCategories);
+  const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${weightUnit.value}`});
 
-  const onDeleteWeightCategory = React.useCallback((categoryId) => {
-    const updatedCategories = weightCategories.filter(category => category.id !== categoryId);
-    setWeightCategories(updatedCategories);
-  }, [weightCategories]);
-
-  const onAddCategory = React.useCallback((ev) => {
+  const onAddWeightCategory = React.useCallback((ev) => {
     if (ev.key === 'Enter') {
       ev.preventDefault();
       // ev.target.blur();
@@ -103,12 +67,7 @@ export default observer(function TournamentSettings() {
         setWeightCategory('');
       }
     }
-  }, [weightCategory, weightCategories])
-
-  const onDeleteClassification = React.useCallback((classificationId) => {
-    const updatedClassifications = classificationCategories.filter(classification => classification.id !== classificationId);
-    setClassificationCategories(updatedClassifications);
-  }, [classificationCategories]);
+  }, [weightCategory, weightCategories]);
 
   const onAddClassification = React.useCallback((ev) => {
     if (ev.key === 'Enter') {
@@ -121,39 +80,58 @@ export default observer(function TournamentSettings() {
     }
   }, [classification, classificationCategories]);
 
-  const onSave = () => {
-    tournamentStore.setTournamentBasicSettings({ tournamentName, tournamentDate, tablesCount, weightCategories, classificationCategories });
+  const onDeleteWeightCategory = React.useCallback((categoryId) => {
+    const updatedCategories = weightCategories.filter(category => category.id !== categoryId);
+    setWeightCategories(updatedCategories);
+  }, [weightCategories]);
+
+  const onDeleteClassification = React.useCallback((classificationId) => {
+    const updatedClassifications = classificationCategories.filter(classification => classification.id !== classificationId);
+    setClassificationCategories(updatedClassifications);
+  }, [classificationCategories]);
+
+  const onSave = async () => {
+    //auth.logout();
+    tournamentStore.setTournamentBasicSettings({ tournamentName, tournamentDate, tablesCount, weightCategories, classificationCategories, weightUnit });
   }
 
+  // React.useEffect(() => {
+  //   console.log('mount Tournament');
+  //   return () => console.log('unmount Tournament Settings') // check why mount/unmount twice
+  // }, []);
 
-  React.useEffect(() => {
-    console.log('mount Tournament');
-  }, []);
-
-  const navigate = useNavigate();
+  const onChangeWeightUnit = (unit) => {  
+    setWeightUnit(WEIGHT_UNITS[unit]);
+    const defaultCategoriesList = weightUnit.value === WEIGHT_UNIT_KG ? WEIGHT_CATEGORIES_DEFAULT : WEIGHT_CATEGORIES_DEFAULT_LBS;
+    if (_.isEqual(defaultCategoriesList, weightCategories)) {
+      setWeightCategories(unit === WEIGHT_UNIT_KG ? WEIGHT_CATEGORIES_DEFAULT : WEIGHT_CATEGORIES_DEFAULT_LBS);
+    }
+  }
 
   return (
-    <Grid container sx={{ justifyContent: 'center', mt: 2, }}>
-      <Grid item xs={10}>
+    <Grid container sx={{ justifyContent: 'center', p: 4, }}>
+      <Grid item xs={12}>
         <Card raised>
           <CardContent>
-            <TextField
-              id="outlined-basic"
-              label={intl.formatMessage({ id: 'common.tournamentName' })}
-              variant="outlined"
-              fullWidth 
-              value={tournamentName}
-              onChange={(event) => {
-                setTournamentName(event.target.value);
-              }}
-              color="success"
-              helperText={intl.formatMessage({ id: 'placeholder.tournamentName' })}
-              margin='normal'
-            />
-            <Grid container sx={{ justifyContent: 'center' }} spacing={2}>
-              <Grid item xs={6} >
+            <Grid container sx={{ }} spacing={2}>
+              <Grid item xs={6}>
+                <TextField
+                  id="outlined-basic"
+                  label={intl.formatMessage({ id: 'common.tournamentName' })}
+                  variant="outlined"
+                  fullWidth 
+                  value={tournamentName}
+                  onChange={(event) => {
+                    setTournamentName(event.target.value);
+                  }}
+                  helperText={intl.formatMessage({ id: 'placeholder.tournamentName' })}
+                  margin='normal'
+                />
+              </Grid>
+              <Grid item xs={6}>
                 <FormControl fullWidth margin='normal'>
                   <DatePicker
+                    format='dd-MM-yyyy'
                     label={intl.formatMessage({ id: 'common.tournamentDate' })}
                     value={new Date(tournamentDate)}
                     onChange={setTournamentDate}
@@ -161,7 +139,8 @@ export default observer(function TournamentSettings() {
                   <FormHelperText>{intl.formatMessage({ id: 'placeholder.tournamentDate' })}</FormHelperText>
                 </FormControl>
               </Grid>
-
+            </Grid>
+            <Grid container sx={{ justifyContent: 'center' }} spacing={2}>
               <Grid item xs={6}>
                 <FormControl fullWidth margin='normal'>
                   <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.tableNumber' })}</InputLabel>
@@ -172,21 +151,38 @@ export default observer(function TournamentSettings() {
                     label={intl.formatMessage({ id: 'common.tableNumber' })}
                     onChange={(event) => setTablesCount(event.target.value)}
                   >
-                    {tableCountSelectOptions.map(
+                    {TABLES_SELECT_CONFIG.map(
                       (table) => <MenuItem key={table.key} value={table.value}>{intl.formatMessage({ id: table.titleKey })}</MenuItem>
                     )}
                   </Select>
                   <FormHelperText>{intl.formatMessage({ id: 'placeholder.tableNumber' })}</FormHelperText>
                 </FormControl>
               </Grid>
+              <Grid item xs={6}>
+                <FormControl fullWidth margin='normal'>
+                  <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.weightUnit' })}</InputLabel>
+                  <Select
+                    labelId="demo-simple-select-label"
+                    id="demo-simple-select"
+                    value={weightUnit.value}
+                    label={intl.formatMessage({ id: 'common.weightUnit' })}
+                    onChange={(event) => onChangeWeightUnit(event.target.value)}
+                  >
+                    {Object.keys(WEIGHT_UNITS).map(
+                      (unit) => <MenuItem key={WEIGHT_UNITS[unit].value} value={WEIGHT_UNITS[unit].value}>{intl.formatMessage({ id: `unit.weight.label.${WEIGHT_UNITS[unit].value}`})}</MenuItem>
+                    )}
+                  </Select>
+                  <FormHelperText>{intl.formatMessage({ id: 'placeholder.weightUnit' })}</FormHelperText>
+                </FormControl>
+              </Grid>
             </Grid>
 
-            <Alert variant='filled' severity="info" sx={{ mt: 2, mb: 2 }}>
+            <Alert variant='filled' severity="warning" sx={{ mt: 2, mb: 2 }}>
               <AlertTitle>{intl.formatMessage({ id: 'common.attention' })}</AlertTitle>
               {intl.formatMessage({ id: 'categories.rulesExplanation' })}
             </Alert>
             <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
-              {intl.formatMessage({ id: 'common.weightCategory' })} ({tournamentStore.weightUnit.label}):
+              {intl.formatMessage({ id: 'common.weightCategories' })} ({weightUnitLabel}):
             </Typography>
             <Paper
               elevation={0}
@@ -214,7 +210,7 @@ export default observer(function TournamentSettings() {
                       setWeightCategory(event.target.value)
                     }
                   }}
-                  onKeyDown={onAddCategory}
+                  onKeyDown={onAddWeightCategory}
                   placeholder={intl.formatMessage({ id: 'common.add' })}
                   id="outlined-adornment-weight"
                   endAdornment={<InputAdornment position="end">{weightUnitLabel}</InputAdornment>}
@@ -231,11 +227,11 @@ export default observer(function TournamentSettings() {
                       color="primary" 
                       sx={{ mb: 1 }}
                       label={
-                        category.id === 'xxx'
-                          ? intl.formatMessage({ id: "unit.weight.kilogram" })
+                        category.id === CATEGORY_OPEN_ID
+                          ? intl.formatMessage({ id: "category.open" })
                           : `${category.value} ${weightUnitLabel}`
                       }
-                      onDelete={(weightCategories.length === 1 || category.id === 'xxx') ? undefined : () => onDeleteWeightCategory(category.id)}
+                      onDelete={(weightCategories.length === 1 || category.id === CATEGORY_OPEN_ID) ? undefined : () => onDeleteWeightCategory(category.id)}
                     />
                   </ListItem>
                 );
@@ -244,7 +240,7 @@ export default observer(function TournamentSettings() {
             </Paper>
 
             <Typography variant="subtitle1" component="h6" sx={{ p: 0.5 }}>
-              {intl.formatMessage({ id: "commonn.classification" })}:
+              {intl.formatMessage({ id: "common.classification" })}:
             </Typography>
             <Paper
               elevation={0}
@@ -308,7 +304,7 @@ export default observer(function TournamentSettings() {
                   size="large"
                   variant="outlined"
                 >
-                  {intl.formatMessage({ id: "common.saveChanges" })}
+                  {intl.formatMessage({ id: "buttons.apply.changes" })}
                 </Button>
             </Stack>
 

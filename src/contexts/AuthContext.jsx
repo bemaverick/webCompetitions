@@ -1,11 +1,13 @@
 import React, { useContext, useState, useEffect } from "react"
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { firebaseApp } from "../firebase"
 import { CircularProgress } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 
 const auth = getAuth(firebaseApp);
-
+// Create a Google Auth Provider
+const provider = new GoogleAuthProvider();
+console.log('auth', provider, auth)
 
 const AuthContext = React.createContext()
 
@@ -23,6 +25,10 @@ export function AuthProvider({ children }) {
 
   function signInWithEmail(email, password) {
     return signInWithEmailAndPassword(auth, email, password);
+  }
+
+  function signInWithGoogle() {
+    return signInWithPopup(auth, provider);
   }
 
   function logout() {
@@ -59,6 +65,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     signInWithEmail,
+    signInWithGoogle,
     signup,
     logout,
     resetPassword,
