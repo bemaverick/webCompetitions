@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "react-router-dom";
 import { getContacts, createContact } from "../contacts";
+import Snackbar from '@mui/material/Snackbar';
 import { Button } from "@mui/material";
 import { useAuth } from '../contexts/AuthContext';
 import * as React from 'react';
@@ -23,7 +24,9 @@ import CategoryIcon from '@mui/icons-material/Category';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import logo from '../assets/logo_white.jpeg';
+import { observer } from "mobx-react-lite";
 import { useIntl } from "react-intl";
+import { systemStore } from "../stores/systemStore";
 
 
 export async function action() {
@@ -76,9 +79,10 @@ const drawerItems = [
   },
 ]
 
-export default function Root() {
+export default observer(function Root() {
   const intl = useIntl();
   const auth = useAuth();
+  console.log('auth root', auth);
   const navigate = useNavigate();
   const pathname = useLocation().pathname;
   const currentItem = drawerItems.filter((item => item.path === pathname))[0];
@@ -96,83 +100,112 @@ export default function Root() {
 
         </Toolbar>
       </AppBar>
-    <Drawer
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
+      <Drawer
+        sx={{
           width: drawerWidth,
-          boxSizing: 'border-box',
-        },
-      }}
-      variant="permanent"
-      anchor="left"
-    >
-      <Toolbar>
-        <Box
-          component="img"
-          sx={{
-            my: 1,
-            ml: -1,
-            height: 48,
-            width: 48,
-            // maxHeight: { xs: 233, md: 167 },
-            // maxWidth: { xs: 350, md: 250 },
-          }}
-          alt="ARM GRID logo"
-          src={logo}
-        />
-        <Typography variant="h5" noWrap component="div">
-          ARM GRID
-        </Typography>
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+          },
+        }}
+        variant="permanent"
+        anchor="left"
+      >
+        <Toolbar>
+          <Box
+            component="img"
+            sx={{
+              my: 1,
+              ml: -1,
+              height: 48,
+              width: 48,
+              // maxHeight: { xs: 233, md: 167 },
+              // maxWidth: { xs: 350, md: 250 },
+            }}
+            alt="ARM GRID logo"
+            src={logo}
+          />
+          <Typography variant="h5" noWrap component="div">
+            {intl.formatMessage({ id: 'app.name' })}
+          </Typography>
 
-      </Toolbar>
-      <Divider />
-      <List>
-        {drawerItems.map((item, index) => (
-          <ListItem onClick={() => navigate(item.path)} key={item.id} disablePadding>
-            <ListItemButton selected={pathname === item.path}>
-              <ListItemIcon>
-                {item.icon()}
-              </ListItemIcon>
-              <ListItemText primary={intl.formatMessage({ id: item.titleId })} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      {/* <Divider />
-      <List>
-        {['All mail'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List> */}
-    </Drawer>
-    <Box
-      component="main"
-      sx={{
-        flexGrow: 1,
-        height: '100vh',
-        overflow: 'hidden',
-        //backgroundColor: '#fafafa',
-        backgroundColor: '#F3F6F9',
-        p: 0
-      }}
-    >
-      {pathname !== '/tournamentCategories'
-      && pathname !== '/tournamentParticipants'
-      && pathname !== '/tournamentResults'
-      && pathname !== '/' && (
-        <Toolbar />
-      )}
-      <Outlet /> 
+        </Toolbar>
+        <Divider />
+        <List>
+          {drawerItems.map((item, index) => (
+            <ListItem onClick={() => navigate(item.path)} key={item.id} disablePadding>
+              <ListItemButton selected={pathname === item.path}>
+                <ListItemIcon>
+                  {item.icon()}
+                </ListItemIcon>
+                <ListItemText primary={intl.formatMessage({ id: item.titleId })} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+        <Box
+          sx={{ flex: 1, border: '1px solid black'}}
+        >
+          
+        </Box>
+        <Button
+          sx={{ height: '40px', m: 2, }}
+          //size='small'
+          variant='outlined'
+          onClick={auth.logout}  
+        >
+          {intl.formatMessage({ id: 'buttons.apply.changes' })}
+        </Button>
+        {/* <Divider />
+        <List>
+          {['All mail'].map((text, index) => (
+            <ListItem key={text} disablePadding>
+              <ListItemButton>
+                <ListItemIcon>
+                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+                </ListItemIcon>
+                <ListItemText primary={text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List> */}
+      </Drawer>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          height: '100vh',
+          overflow: 'hidden',
+          //backgroundColor: '#fafafa',
+          backgroundColor: '#F3F6F9',
+          p: 0
+        }}
+      >
+        {pathname !== '/tournamentCategories'
+        && pathname !== '/tournamentParticipants'
+        && pathname !== '/tournamentResults'
+        && pathname !== '/' && (
+          <Toolbar />
+        )}
+        <Outlet /> 
+      </Box>
+      <Snackbar
+        ContentProps={{
+          sx: {
+            backgroundColor: 'error.main',
+            color: 'white',
+          },
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        open={systemStore.snackBar.visible}
+        autoHideDuration={6000}
+        onClose={() => systemStore.displaySnackbar(false)}
+        message={systemStore.snackBar.message && intl.formatMessage({ id: systemStore.snackBar.message })}
+        //action={action}
+        
+      />
+      
     </Box>
-  </Box>
   )
-}
+})

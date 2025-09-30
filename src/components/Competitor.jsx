@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Grid, Typography, Divider } from '@mui/material';
+import { Grid, Typography, Divider, Chip } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
@@ -79,7 +79,7 @@ export const CompetitorRow = (props) => {
         {columnConfig.firstName?.visible && (
           <Grid item xs={columnConfig.firstName.flex} sx={{ }}> 
             <Typography variant="body1">
-              {withEmoji && getMedalEmoji(props.position)}{props.position}. {props.firstName}
+              {withEmoji && getMedalEmoji(props.position)}{props.position}. {`  ${props.firstName}`}
             </Typography>
           </Grid>
         )}

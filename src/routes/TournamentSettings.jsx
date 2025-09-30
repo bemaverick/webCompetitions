@@ -34,7 +34,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { v4 as uuidv4 } from 'uuid';
 import _ from "lodash"
 import { useIntl } from 'react-intl';
-import { CATEGORY_OPEN_ID, TABLES_SELECT_CONFIG, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_CATEGORIES_DEFAULT_LBS, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
+import { CATEGORY_OPEN_ID, TABLE_STATE, TABLES_SELECT_CONFIG, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_CATEGORIES_DEFAULT_LBS, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
+import { systemStore } from '../stores/systemStore';
 
 
 const ListItem = styled('li')(({ theme }) => ({
@@ -108,6 +109,22 @@ export default observer(function TournamentSettings() {
     }
   }
 
+  const changeNumberOfTables = (event) => {
+    const numberOfTables = event.target.value;
+    let lastActiveTableIndex = 0;
+    for (let i = 0; i < tournamentStore.tablesCount; i++) {
+      if (tournamentStore.tables[i].state !== TABLE_STATE.IDLE) {
+        lastActiveTableIndex = i;
+      }
+    }
+    if (numberOfTables < lastActiveTableIndex + 1) {
+      systemStore.displaySnackbar(true, 'error.tablesCount.change')
+    } else {
+      setTablesCount(numberOfTables);
+    }
+    console.log('lastActiveTableIndex', lastActiveTableIndex);
+  }
+
   return (
     <Grid container sx={{ justifyContent: 'center', p: 4, }}>
       <Grid item xs={12}>
@@ -149,7 +166,7 @@ export default observer(function TournamentSettings() {
                     id="demo-simple-select"
                     value={tablesCount}
                     label={intl.formatMessage({ id: 'common.tableNumber' })}
-                    onChange={(event) => setTablesCount(event.target.value)}
+                    onChange={changeNumberOfTables}
                   >
                     {TABLES_SELECT_CONFIG.map(
                       (table) => <MenuItem key={table.key} value={table.value}>{intl.formatMessage({ id: table.titleKey })}</MenuItem>

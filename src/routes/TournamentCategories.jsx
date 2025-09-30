@@ -5,6 +5,14 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Dialog from '@mui/material/Dialog';
+import PeopleIcon from '@mui/icons-material/People';
+import PersonIcon from '@mui/icons-material/Person';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Slide from '@mui/material/Slide';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -12,12 +20,14 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
-import { Button, Stack, Modal, FormControl, MenuItem, Select, InputLabel, Divider, ListSubheader, Chip, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
+import { FormHelperText, Button, Badge, Stack, Modal, FormControl, MenuItem, Select, InputLabel, Divider, ListSubheader, Chip, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField, selectClasses } from '@mui/material';
 
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { useAuth } from '../contexts/AuthContext';
+import { styled } from '@mui/material/styles';
+
 import { useNavigate  } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
@@ -28,19 +38,17 @@ import { toJS } from 'mobx';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
 import { useIntl } from 'react-intl';
-import { CATEGORY_OPEN_ID } from '../constants/tournamenConfig';
-import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { CATEGORY_OPEN_ID, CATEGORY_STATE } from '../constants/tournamenConfig';
+import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { systemStore } from '../stores/systemStore';
 
 
-const handTranslations = {
-  left: 'ліва рука',
-  right: 'права рука',
-}
-
-const genderTranslations = {
-  men: 'чоловіки',
-  women: 'жінки',
-}
+const Transition = React.forwardRef(function Transition(
+  props,
+  ref,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default observer(function TournamentCategories() {
   const intl = useIntl();
@@ -85,7 +93,7 @@ export default observer(function TournamentCategories() {
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
         <Stack sx={{ flexGrow: 1, overflow: 'hidden', flexDirection: 'row'}}>
-          <Stack sx={{ flex: 2, overflow: 'scroll', p: 2, pt: 0 }}>
+          <Stack sx={{ flex: 3, overflow: 'scroll', p: 2, pt: 0 }}>
             <List
               sx={{ pt: 0}}
               dense={true}
@@ -111,6 +119,7 @@ export default observer(function TournamentCategories() {
                   key={category.id}
                   id={category.id}
                   //Senior Women 50 kg Left
+                  categoryState={category.state}
                   title={generateTournamentCategoryTitle(intl, category.config)}
                   subTitle={generateTournamentCategoryTitle(intl, category.config, 'handOnly')}
                 />
@@ -133,7 +142,24 @@ export default observer(function TournamentCategories() {
   )
 })
 
-const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
+// const StyledBadge = styled(Badge)(({ theme }) => ({
+//   '& .MuiBadge-badge': {
+//     right: -3,
+//     top: 13,
+//     border: `2px solid ${(theme.vars ?? theme).palette.background.paper}`,
+//     padding: '0 4px',
+    
+//   },
+// }));
+
+
+const CategoryItem = ({ title, subTitle, id, onClick, selected, categoryState }) => {
+  const intl = useIntl();
+  const stateLabel = intl.formatMessage({ id: categoryStateTranslationsKey[categoryState] });
+  const competitorsNumberInCategory = tournamentStore.competitorsList
+    .reduce((accumulator, current) => accumulator + (current.tournamentCategoryIds.includes(id) ? 1 : 0), 0);
+//  const secondary = competitorsNumberInCategory >= 1 ? `${subTitle} | ${competitorsNumberInCategory} athletes` : subTitle;
+  
   return (
     <ListItem divider disablePadding>
       <ListItemButton selected={selected} onClick={onClick}>
@@ -141,6 +167,13 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
           primary={title}
           secondary={subTitle}
         />
+       {competitorsNumberInCategory > 0 && (
+          <Badge sx={{ mx: 1 }}  badgeContent={competitorsNumberInCategory} color="info">
+            <PersonIcon color="disabled" />
+          </Badge>
+       )}
+
+        <Chip size='small' sx={{ mx: 1, mr: 0 }} label={stateLabel} color={categoryChipStyle[categoryState]} />
       </ListItemButton>
     </ListItem>
   )
@@ -149,6 +182,8 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
 const CategoryDetailsView = observer((props) => {
   const navigate = useNavigate();
   const intl = useIntl();
+  const [removalConfirmationModal, setRemovalConfirmationModal] = React.useState(false);
+
   const currentTournamentCategory = tournamentStore.newTournamentCategories[props.tournamentCategoryId];
   const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
   const [editModalVisble, setEditModalVisble] = React.useState(false);
@@ -175,29 +210,51 @@ const CategoryDetailsView = observer((props) => {
   //console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
 
   const removeCategory = () => { 
-    props.setCurrentCategoryId(Object.keys(tournamentStore.newTournamentCategories)[0]);
+    setRemovalConfirmationModal(false);
+    const isCategoryAlreadyLaunched = tournamentStore.newTournamentCategories[props.tournamentCategoryId].state !== CATEGORY_STATE.IDLE;
+    if (isCategoryAlreadyLaunched) {
+      systemStore.displaySnackbar(true, 'error.selectedCategory.inProgress.remove');
+      return;
+    }
+    const isFirstItem = Object.keys(tournamentStore.newTournamentCategories)[0] === props.tournamentCategoryId;
+    props.setCurrentCategoryId(isFirstItem ? (Object.keys(tournamentStore.newTournamentCategories)[1] || '') : Object.keys(tournamentStore.newTournamentCategories)[0]);
+    //kind of crutch to prevent for access to undefined in  currentTournamentCategory.config  
     tournamentStore.removeTournamentCategory(props.tournamentCategoryId)
   }
+
+  const onDeleteCompetitor = (competitorId) => {
+    const categoryState = tournamentStore.newTournamentCategories[props.tournamentCategoryId].state;
+    if (categoryState === CATEGORY_STATE.IDLE) {
+      tournamentStore.removeCompetitorFromCategory(competitorId, props.tournamentCategoryId);
+
+    } else {
+      systemStore.displaySnackbar(true, intl.formatMessage({ id: 'warning.category.specific.delete.athlete' }));
+    }
+  }
+
+  const addAthetesEnabled = currentTournamentCategory.state === CATEGORY_STATE.IDLE
   
   return (
     <>
-      <Stack sx={{ flex: 9, flexDirection: 'column', p: 2 }}>
+      <Stack sx={{ flex: 7, flexDirection: 'column', p: 2 }}>
         <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
           {generateTournamentCategoryTitle(intl, currentTournamentCategory.config, 'full')}
         </Typography>
-        <Grid container justifyContent={'center'} sx={{ p: 2 }}>
-          <Grid item xs={3}>
-            <Button
-              //sx={{ height: '40px', mt: 2 }}
-              size='noraml'
-              fullWidth
-              variant='contained'
-              onClick={navigateToCompetitors}
-            >
-              {intl.formatMessage({ id: 'buttons.add.participant' })}
-            </Button>
+        {addAthetesEnabled && (
+          <Grid container justifyContent={'center'} sx={{ p: 2 }}>
+            <Grid item xs={3}>
+              <Button
+                //sx={{ height: '40px', mt: 2 }}
+                size='noraml'
+                fullWidth
+                variant='contained'
+                onClick={navigateToCompetitors}
+              >
+                {intl.formatMessage({ id: 'buttons.add.participant' })}
+              </Button>
+            </Grid>
           </Grid>
-        </Grid>
+        )}
         <Stack elevation={2} sx={{ flexGrow: 1, mt: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
           <TextField
             fullWidth
@@ -227,7 +284,7 @@ const CategoryDetailsView = observer((props) => {
                   setEditModalVisble(true);
                   setSelectedCompetitor(competitor);
                 }}
-                onDelete={() => tournamentStore.removeCompetitorFromCategory(competitor.id, props.tournamentCategoryId)}
+                onDelete={() => onDeleteCompetitor(competitor.id)}
               />
             ))}
           </Stack>
@@ -237,7 +294,7 @@ const CategoryDetailsView = observer((props) => {
             color='error'
             size='small'
             variant='outlined'
-            onClick={removeCategory}
+            onClick={() => setRemovalConfirmationModal(true)}
             >
               {intl.formatMessage({ id: 'buttons.remove.category' })}
           </Button>
@@ -253,6 +310,12 @@ const CategoryDetailsView = observer((props) => {
         competitor={selectedCompetitor}
         modalVisible={editModalVisble}
       /> 
+      <AlertDialogSlide
+        state={removalConfirmationModal}
+        onClose={() => setRemovalConfirmationModal(false)}
+        onAgree={() => removeCategory()}
+        
+      />
     </>
   )
 })
@@ -270,6 +333,7 @@ const modalChildrenContainerStyle = {
 
 const ModalForCategories = observer((props) => {
   const intl = useIntl();
+  const [validationErrors, showValidationErrors] = React.useState(false);
   const [numberOfCategories, setNumberOfCategories] = React.useState(0);
   const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
   const [classification, setClassification] = React.useState(tournamentStore.classificationCategories[0]);
@@ -289,7 +353,15 @@ const ModalForCategories = observer((props) => {
     });
   };
 
+  React.useEffect(() => {
+    if (validationErrors && !_.isEmpty(selectedWeightCategories)) {
+      showValidationErrors(false);
+    }
+  }, selectedWeightCategories, validationErrors);
+
   const selectWeightCategory = (weightCategory) => {
+
+
     const copyOfSelectedCategories = _.cloneDeep(selectedWeightCategories);
     if (selectedWeightCategories[weightCategory.value]) { //remove selected category
       delete copyOfSelectedCategories[weightCategory.value];
@@ -300,6 +372,13 @@ const ModalForCategories = observer((props) => {
   }
   
   const onSave = () => {
+    console.log('selectedWeightCategories', selectedWeightCategories)
+    if (_.isEmpty(selectedWeightCategories) || (!checkboxes.left && !checkboxes.right) || (!checkboxes.men && !checkboxes.women)) {
+      showValidationErrors(true);
+      return;
+    } else {
+      showValidationErrors(false);
+    }
     props.onClose();
     tournamentStore.createTournamentCategories({
       classification,
@@ -316,7 +395,6 @@ const ModalForCategories = observer((props) => {
     let totalCount = 0;
     if (classification.id && !_.isEmpty(selectedWeightCategories) && Object.values(checkboxes).some(el => el)) {
       const weightCategoriesNumber = Object.keys(selectedWeightCategories).length;
-      // const multiplier = Object.values(checkboxes).reduce((accumulator, currentValue) => accumulator + (currentValue ? 1 : 0), 0);
       const handsNumber = left && right ? 2 : 1;
       const genderNumber = men && women ? 2 : 1;
       const multiplier = handsNumber * genderNumber;
@@ -328,8 +406,12 @@ const ModalForCategories = observer((props) => {
   }, [checkboxes, classification, selectedWeightCategories])
 
 
+  const selectClassification = (event) => {
+    const classificationId = event.target.value;
+    const selectedClassification = tournamentStore.classificationCategories.find(classification => classification.id === classificationId);
+    setClassification(selectedClassification);
+  }
 
-  //console.log('selectedWeightCategories', selectedWeightCategories)
   return (
     <Modal
       open={props.modalVisible}
@@ -351,12 +433,14 @@ const ModalForCategories = observer((props) => {
             value={classification.id}
             label={intl.formatMessage({ id: 'common.classification'})}
             //onChange={(event) => console.log('event', event.target.value,_.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value))}
-            onChange={(event) => setClassification({ id: event.target.value, label: _.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value).label })}
+            onChange={selectClassification}
           >
             {tournamentStore.classificationCategories.map((classificationCategory) => (
               <MenuItem
+        
                 key={classificationCategory.id}
                 value={classificationCategory.id}
+
               >
                 {classificationCategory.label || intl.formatMessage({ id: classificationCategory.labelKey })}
               </MenuItem>
@@ -383,7 +467,7 @@ const ModalForCategories = observer((props) => {
             )
           })}
         </Stack>
-
+        {validationErrors && _.isEmpty(selectWeightCategory) && <FormHelperText sx={{ py: 2 }} error>{intl.formatMessage({ id: 'common.select.weightCategories'})}</FormHelperText>}
         <Grid container sx={{ justifyContent: 'center', mt: 2, }}>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
@@ -391,6 +475,7 @@ const ModalForCategories = observer((props) => {
             </Typography>
             <FormControlLabel control={<Checkbox color="success" checked={men} onChange={handleChange} name='men' />} label={intl.formatMessage({ id: 'common.sex.men'})} />
             <FormControlLabel control={<Checkbox color="success" checked={women} onChange={handleChange} name='women' />} label= {intl.formatMessage({ id: 'common.sex.women'})} />
+            {validationErrors && (!checkboxes.men && !checkboxes.women) && <FormHelperText error>{intl.formatMessage({ id: 'validation.commong.required'})}</FormHelperText>}
           </Grid>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
@@ -398,6 +483,7 @@ const ModalForCategories = observer((props) => {
             </Typography>
             <FormControlLabel control={<Checkbox color="success" checked={left} onChange={handleChange} name='left' />} label={intl.formatMessage({ id: 'common.hand.left'})} />
             <FormControlLabel control={<Checkbox color="success" checked={right} onChange={handleChange} name='right' />} label={intl.formatMessage({ id: 'common.hand.right'})} />
+            {validationErrors && (!checkboxes.left && !checkboxes.right) && <FormHelperText error>{intl.formatMessage({ id: 'validation.commong.required'})}</FormHelperText>}
           </Grid>
         </Grid>
         <Typography variant="subtitle1" component="h6" sx={{ pt: 2, textAlign: 'center' }}>
@@ -417,3 +503,33 @@ const ModalForCategories = observer((props) => {
     </Modal>
   )
 });
+
+function AlertDialogSlide(props) {
+  const intl = useIntl();
+
+  return (
+    <React.Fragment>
+      <Dialog
+        open={props.state}
+        slots={{
+          transition: Transition,
+        }}
+        keepMounted
+        onClose={props.onClose}
+        aria-describedby="alert-dialog-slide-description"
+      >
+        <DialogTitle>{intl.formatMessage({ id: 'warning.category.remove.confirmationModal1' })}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-slide-description">
+            {intl.formatMessage({ id: 'warning.category.remove.confirmationModal2' })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={props.onClose}>{intl.formatMessage({ id: 'buttons.cancel' })}</Button>
+          <Button color='error' onClick={props.onAgree}>{intl.formatMessage({ id: 'buttons.remove.category' })}</Button>
+        </DialogActions>
+      </Dialog>
+    </React.Fragment>
+  );
+}
+

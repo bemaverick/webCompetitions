@@ -30,6 +30,8 @@ import { toJS  } from 'mobx';
 import { ConfirmProvider, useConfirm } from "material-ui-confirm";
 import { useIntl } from 'react-intl'
 import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { CATEGORY_STATE, TABLE_STATE } from '../constants/tournamenConfig';
+import { systemStore } from '../stores/systemStore';
 
 export default observer(function Tournament() {
   const intl = useIntl();
@@ -58,12 +60,38 @@ export default observer(function Tournament() {
   )
 });
 
+
+const CREATE_CATEGORY_SELECTOR_VAL = 'CREATE_CATEGORY_SELECTOR_VAL';
 const TableContent = observer((props) => {
   const intl = useIntl();
+  const navigate = useNavigate();
   const currentTableIndex = tournamentStore.currentTableIndex;
   const currentTable = tournamentStore.currentTable;
   const currentTableState = currentTable.state; // idle, started, or finished;
   const isFinalsAvailable = !!Object.keys(tournamentStore.postponedCategoriesProgress).length;
+
+  const startMatches = () => {
+    if (currentTable.category) {
+      tournamentStore.setTableStatus(currentTableIndex, TABLE_STATE.IN_PROGRESS);
+      tournamentStore.setTournamentCategoryStatus(TABLE_STATE.IN_PROGRESS);
+    }
+  }
+
+  const selectCategory = (event) => {
+    const { value: categoryId } = event.target;
+    if (categoryId === CREATE_CATEGORY_SELECTOR_VAL) {
+      navigate('/tournamentCategories');
+      return;
+    } 
+    const selectedCategoryCompetitorsCount = tournamentStore.selectedCategoryCompetitorsCount(categoryId);
+    console.log('selectedCategoryCompetitorsCount', selectedCategoryCompetitorsCount)
+    if (!selectedCategoryCompetitorsCount) {
+      systemStore.displaySnackbar(true, 'error.selectedCategory.change.noCompetitors')
+      return;
+
+    } 
+    tournamentStore.setTableCategory(currentTableIndex, categoryId);
+  }
 
   if (currentTableState === 'idle') {
     return (
@@ -76,19 +104,40 @@ const TableContent = observer((props) => {
               id="demo-simple-select"
               value={tournamentStore.currentTable.category}
               label={intl.formatMessage({ id: 'common.chooseCategory' })}
-              onChange={(event) => tournamentStore.setTableCategory(currentTableIndex, event.target.value)}
+              onChange={selectCategory}
             >
-              {Object.keys(tournamentStore.newTournamentCategories)
-               // .filter((categoryId => tournamentStore.newTournamentCategories[categoryId].state === 'idle'))
-                .map((categoryId) => (
-                  <MenuItem
-                    key={categoryId}
-                    value={categoryId}
-                  >
-                    {/* {tournamentStore.newTournamentCategories[categoryId].categoryTitleFull} */}
-                    {generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[categoryId].config, 'full')}
-                  </MenuItem>
-              ))}
+              {tournamentStore.idleCategoriesIdsList
+                .map((categoryId) => {
+                  const competitorsNumberInCategory = tournamentStore.competitorsList
+                    .reduce((accumulator, current) => accumulator + (current.tournamentCategoryIds.includes(categoryId) ? 1 : 0), 0);
+                  const label = competitorsNumberInCategory >= 1
+                    ? `${competitorsNumberInCategory} ${intl.formatMessage({ id: 'common.participants' })}`
+                    : intl.formatMessage({ id: 'common.empty.category' });
+                  return (
+                    <MenuItem
+                      divider
+                      key={categoryId}
+                      value={categoryId}
+                    >
+                      {generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[categoryId].config, 'full')}
+                      <Chip
+                        size='small'
+                        label={label}
+                        sx={{ ml: 2 }}
+                        variant={competitorsNumberInCategory >= 1 ? undefined : "outlined"}
+                        color={competitorsNumberInCategory >= 1 ? 'success' : undefined}
+                      />
+                    </MenuItem>
+                 )
+              })}
+              <MenuItem
+                selected
+                sx={{ color:  'primary.main'}}
+                key={'create_category'}
+                value={CREATE_CATEGORY_SELECTOR_VAL}
+              >
+                {intl.formatMessage({ id: 'button.create.tournamentCategory' })}
+              </MenuItem>
             </Select>
             <FormHelperText>
               {intl.formatMessage({ id: 'common.chooseCategoryToStartHint' }, { tableNumber: currentTableIndex + 1 })}
@@ -96,10 +145,7 @@ const TableContent = observer((props) => {
           </FormControl>
           <Button
             sx={{ mt: 2, mb: 3, }}
-            onClick={() => {
-              tournamentStore.setTableStatus(currentTableIndex, 'started');
-              tournamentStore.setTournamentCategoryStatus('started');
-            }}
+            onClick={startMatches}
             variant='outlined'
           >
             {intl.formatMessage({ id: 'common.startMatches' })}
@@ -121,8 +167,7 @@ const TableContent = observer((props) => {
                   label={intl.formatMessage({ id: 'common.chooseCategory' })}
                   onChange={(event) => tournamentStore.setTableCategory(currentTableIndex, event.target.value)}
                 >
-                  {Object.keys(tournamentStore.postponedCategoriesProgress)
-                    .filter((categoryId => tournamentStore.newTournamentCategories[categoryId].state === 'paused'))
+                  {tournamentStore.postponedCategoriesIdsList
                     .map((categoryId) => (
                       <MenuItem
                         key={categoryId}
@@ -188,7 +233,7 @@ const TableContent = observer((props) => {
       </>
     )
   }
-  if (currentTableState === 'started' || currentTableState === 'finished') {
+  if (currentTableState === TABLE_STATE.IN_PROGRESS || currentTableState === TABLE_STATE.FINISHED) {
     const currentRoundIndex = tournamentStore.currentRoundIndex;
     const nextRoundButtonVisible = currentRoundIndex === Object.keys(currentTable.rounds).length - 1; // if round finished, button not visible;
     const notAllPairsCompleted = tournamentStore.currentGroupA.some(({ stats }) => stats[currentRoundIndex].result === 'idle')
@@ -239,9 +284,9 @@ const TableContent = observer((props) => {
               </Typography>
               <Button
                 onClick={() => {
-                  tournamentStore.setTournamentCategoryStatus('paused');
+                  tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.PAUSED);
                   tournamentStore.saveCategoryProgress();
-                  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
+                //  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
 
                 }}
                 variant='contained'
@@ -267,12 +312,12 @@ const TableContent = observer((props) => {
             <GroupA
               isFinal={isFinal}
               isSuperFinal={isSuperFinal}
-              editable={nextRoundButtonVisible && currentTableState === 'started'}
+              editable={nextRoundButtonVisible && currentTableState === TABLE_STATE.IN_PROGRESS}
             />
             <GroupB
-              editable={nextRoundButtonVisible && currentTableState === 'started'}
+              editable={nextRoundButtonVisible && currentTableState === TABLE_STATE.IN_PROGRESS}
             />
-            {nextRoundButtonVisible && currentTableState === 'started' && (
+            {nextRoundButtonVisible && currentTableState === TABLE_STATE.IN_PROGRESS && (
               <Box sx={{ display: 'flex', p: 2, justifyContent: 'center' }}>
                 <Button
                   onClick={() => tournamentStore.startNextRound()}
@@ -286,7 +331,7 @@ const TableContent = observer((props) => {
                 </Button>
               </Box>
             )}
-            {currentTableState === 'finished' && (
+            {currentTableState === TABLE_STATE.FINISHED && (
               <Box sx={{ display: 'flex', p: 2, justifyContent: 'center' }}>
                 <Button
                   onClick={() => tournamentStore.setTableStatus(currentTableIndex, 'idle')}
@@ -409,7 +454,7 @@ const Pair = (props) => {
         title: intl.formatMessage({ id: 'text.winnerIsChosen' }),
         description: intl.formatMessage({ id: 'text.doChangeWinner' }),
         confirmationText: intl.formatMessage({ id: 'common.yes.change' }),
-        cancellationText: intl.formatMessage({ id: 'common.no' })
+        cancellationText: intl.formatMessage({ id: 'common.no' }),
       })
         .then(() => {
           tournamentStore.markWinner(competitorId, gpoupName);

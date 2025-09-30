@@ -16,15 +16,20 @@ import English from "../locales/en.json";
 import Ukrainian from "../locales/uk.json";
 
 
-import { IntlProvider } from 'react-intl';
+import { IntlProvider, createIntl, createIntlCache } from 'react-intl';
 import SignUp from "./SignUp"
 import SignIn from "./SignIn"
 import InitialPage from "./InitialPage"
 import Root from "./root"
 const theme = createTheme();
 
-const locale = navigator.language;
 
+
+
+
+
+
+const locale = navigator.language;
 let lang;
 if (locale.includes("uk")) {
    lang = Ukrainian;
@@ -32,12 +37,25 @@ if (locale.includes("uk")) {
   lang = English;
 }
 
+
+// It's recommended to create a cache for better performance
+const cache = createIntlCache();
+// Create the intl object
+export const intl = createIntl(
+  {
+    locale,
+    lang,
+  },
+  cache
+);
+
+
 //Browser router was changed to HashRouter
 //because GitHub pages doesn't support browser history
 
 function App() {
   return (
-    <IntlProvider locale={locale} messages={English}>
+    <IntlProvider locale={locale} messages={Ukrainian}>
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <ThemeProvider theme={theme}>
           <ConfirmProvider>

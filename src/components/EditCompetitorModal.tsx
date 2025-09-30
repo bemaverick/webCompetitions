@@ -7,8 +7,10 @@ import { useIntl } from 'react-intl';
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
 import DoneIcon from '@mui/icons-material/Done';
+import { Chip } from '@mui/material';
 import _ from 'lodash';
-import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { CATEGORY_STATE } from '../constants/tournamenConfig';
 
 type EditCompetitorModalProps = {
   modalVisible: boolean;
@@ -124,9 +126,14 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
                 MenuProps={MenuProps}
               >
                 {Object.values(tournamentStore.newTournamentCategories).map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
+                  <MenuItem
+                    key={category.id}
+                    value={category.id}
+                    disabled={category.state !== CATEGORY_STATE.IDLE}
+                  >
                     <Checkbox checked={selectedCategoryIds.indexOf(category.id) > -1} />
                     <ListItemText primary={generateTournamentCategoryTitle(intl, category.config, 'full')}/>
+                    <Chip size='small' sx={{ mx: 1, mr: 0 }} label={intl.formatMessage({ id: categoryStateTranslationsKey[category.state] })} color={categoryChipStyle[category.state]} />
                   </MenuItem>
                 ))}
               </Select>
