@@ -81,7 +81,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
         <Typography variant="h6" component="h6" sx={{ p: 0.5, pb: 3, textAlign: 'center' }}>
           {intl.formatMessage({ id: 'common.athlete.edit' })}
         </Typography>
-        <Grid container  spacing={1}>
+        <Grid container spacing={1}>
           <Grid item xs={2}>
             <TextField
               fullWidth

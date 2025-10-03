@@ -5,7 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
 import { CATEGORY_STATE, CLASSIFICATION_LIST_DEFAULT, HANDS, MATCH_RESULT, SEX, TABLE_INITIAL_STATE, TABLE_STATE, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
-import { createTournamentCategoryConfig } from '../utils/categoriesUtils';
+import { createTournamentCategoryConfig, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { fromUnixTime, format } from 'date-fns';
+import { getIntl } from '../routes/App';
+// import { intl } from '../routes/App';
 
 class TournamentStore {
   constructor() {
@@ -14,7 +17,7 @@ class TournamentStore {
     makePersistable(
       this,
       {
-        name: 'SampleStore',
+        name: 'TournamentStore',
         properties: [
           'tournamentName',
           'tournamentDate',
@@ -26,7 +29,9 @@ class TournamentStore {
           'newTournamentCategories',
           'competitorsList',
           'results',
-          'postponedCategoriesProgress'
+          'postponedCategoriesProgress',
+          'weightUnit',
+
         ],
         storage: window.localStorage
       }
@@ -537,11 +542,32 @@ class TournamentStore {
   get
   idleCategoriesIdsList() {
     return Object.keys(this.newTournamentCategories)
-             .filter((categoryId => this.newTournamentCategories[categoryId].state === CATEGORY_STATE.IDLE))
+      .filter((categoryId => this.newTournamentCategories[categoryId].state === CATEGORY_STATE.IDLE))
   }
 
   selectedCategoryCompetitorsCount(categoryId) {
     return this.competitorsList.reduce((prev, { tournamentCategoryIds }) => prev + (tournamentCategoryIds.includes(categoryId) ? 1 : 0), 0);
+  }
+
+  get
+  resultForPDF() {
+    const dateObject = fromUnixTime(this.tournamentDate / 1000);
+    const formattedDate = format(dateObject, 'dd-MM-yyyy');
+    const categoriesResults = [];
+    Object.keys(this.results).map(categoryId => {
+      const category = this.newTournamentCategories[categoryId];
+      if (category.state === CATEGORY_STATE.FINISHED) {
+        categoriesResults.push({
+          name: generateTournamentCategoryTitle(getIntl(), category.config),
+          results: this.results[categoryId].map((athlete) => `${athlete.lastName} ${athlete.firstName}`)
+        })
+      }
+    })
+    return {
+      title: this.tournamentName,
+      date: formattedDate,
+      categoriesResults,
+    }
   }
 
 

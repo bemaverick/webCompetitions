@@ -2,11 +2,12 @@ import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "
 import { getContacts, createContact } from "../contacts";
 import Snackbar from '@mui/material/Snackbar';
 import { Button } from "@mui/material";
-import { useAuth } from '../contexts/AuthContext';
+import { auth, useAuth } from '../contexts/AuthContext';
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import CssBaseline from '@mui/material/CssBaseline';
+import { ConfirmProvider, useConfirm } from "material-ui-confirm";
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
@@ -17,6 +18,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import { useNavigate, useLocation } from "react-router-dom";
+import ListIcon from '@mui/icons-material/List';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import DataArrayIcon from '@mui/icons-material/DataArray';
 import DisplaySettingsIcon from '@mui/icons-material/DisplaySettings';
@@ -27,6 +29,11 @@ import logo from '../assets/logo_white.jpeg';
 import { observer } from "mobx-react-lite";
 import { useIntl } from "react-intl";
 import { systemStore } from "../stores/systemStore";
+import { tournamentStore } from "../stores/tournament";
+import { fromUnixTime, format } from 'date-fns';
+import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { firestoreDB } from "../firebase";
+import { CATEGORY_STATE } from "../constants/tournamenConfig";
 
 
 export async function action() {
@@ -79,14 +86,89 @@ const drawerItems = [
   },
 ]
 
+const tournamentsRef = collection(firestoreDB, "armGrid_tournaments");
+
+
+const saveResults = async (results) => {
+  try {
+    const userId = auth.currentUser.uid;
+    const dateObject = fromUnixTime(tournamentStore.tournamentDate / 1000);
+    const formattedDate = format(dateObject, 'dd-MM-yyyy');
+    const tournamentRef = doc(tournamentsRef);
+    const tournament = {
+      tournament: {
+        name: tournamentStore.tournamentName,
+        date: formattedDate,
+        tablesCount: tournamentStore.tablesCount,
+        weightUnit: tournamentStore.weightUnit.value,
+      },
+      id: tournamentRef.id,
+      createdAt: serverTimestamp(),
+      user: {
+        uid: userId
+      },
+    }
+
+  
+    await setDoc(tournamentRef, tournament);
+    const tournamentDocRef = doc(firestoreDB, "armGrid_tournaments", tournamentRef.id);
+    for (const categoryId in tournamentStore.results) {
+      if (tournamentStore.newTournamentCategories[categoryId].state === CATEGORY_STATE.FINISHED) { 
+        // save results of finished categories
+        const tournamentCategoryResultCollectionRef = doc(collection(tournamentDocRef, 'results'));
+        await setDoc(tournamentCategoryResultCollectionRef, {
+          category: {
+            ...tournamentStore.newTournamentCategories[categoryId].config,
+            id: categoryId,
+          },
+          id: tournamentCategoryResultCollectionRef.id,
+          result: tournamentStore.results[categoryId]
+            .map(athlete => ({
+              firstName: athlete.firstName, lastName: athlete.lastName, weight: athlete.weight, id: athlete.id
+            }))
+        })
+      }
+    }
+  } catch (error) {
+    console.log('error', error)
+  }
+};
 export default observer(function Root() {
   const intl = useIntl();
   const auth = useAuth();
-  console.log('auth root', auth);
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const pathname = useLocation().pathname;
   const currentItem = drawerItems.filter((item => item.path === pathname))[0];
   const appBarTitle = intl.formatMessage({ id: currentItem.barTitleId || currentItem.titleId });
+  const inCompetitionsListMode = systemStore.appState === 'competitionsList';
+  const competitionInProgress = systemStore.appState === 'competitionInProgress';
+
+  const onPressFinish = async () => {
+    if (competitionInProgress) { 
+      try {
+        await confirm({
+          // title: "Ви впевнені що хочете завершити змагання?",
+          // description: "Поточний прогрес буде втрачено, результат змагань буде збережено",
+          title: "Ви впевнені, що хочете завершити турнір?",
+          description: "Ви не зможете продовжити змагання, але поточний результат буде збережений.",
+          confirmationText: intl.formatMessage({ id: 'common.yes.change' }),
+          cancellationText: intl.formatMessage({ id: 'common.no' }),
+        });
+
+        await saveResults(tournamentStore.results);
+        systemStore.setAppState('competitionsList');
+        navigate('/');
+      } catch (error) {
+        conole.log('cancel', error);
+      }
+    }
+    if (inCompetitionsListMode) {
+      auth.logout();
+    }
+  }
+
+
   return (
     <Box sx={{ display: 'flex' }}>
       <AppBar
@@ -133,7 +215,27 @@ export default observer(function Root() {
         </Toolbar>
         <Divider />
         <List>
-          {drawerItems.map((item, index) => (
+          {inCompetitionsListMode && (
+            <>
+              <ListItem onClick={() => navigate('/')} disablePadding>
+                <ListItemButton selected={pathname === '/'}>
+                  <ListItemIcon>
+                    <ListIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={intl.formatMessage({ id: "common.prevCompetitons" })} />
+                </ListItemButton>
+              </ListItem>
+              <ListItem onClick={() => systemStore.setAppState('competitionInProgress')} disablePadding>
+                <ListItemButton selected={false}>
+                  <ListItemIcon>
+                    <EmojiEventsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={intl.formatMessage({ id: "button.create.new.tournament" })} />
+                </ListItemButton>
+              </ListItem>
+            </>
+          )}
+          {competitionInProgress && drawerItems.map((item, index) => (
             <ListItem onClick={() => navigate(item.path)} key={item.id} disablePadding>
               <ListItemButton selected={pathname === item.path}>
                 <ListItemIcon>
@@ -143,20 +245,25 @@ export default observer(function Root() {
               </ListItemButton>
             </ListItem>
           ))}
-        </List>
-        <Box
-          sx={{ flex: 1, border: '1px solid black'}}
-        >
           
+        </List>
+        <Box sx={{ flex: 1, border: '1px solid transparent'}} />
+          <Button
+            sx={{ height: '40px', m: 2, mb: 0.5 }}
+            //size='small'
+            variant='outlined'
+            color='error'
+            size='small'
+            onClick={onPressFinish}  
+          >
+            {intl.formatMessage({ id: competitionInProgress ? 'button.tournament.finish' : 'button.account.logout' })}
+          </Button>
+        <Box sx={{ px: 2 }}>
+          <Typography variant="body1" color={'grey'} noWrap component="div">
+            v. 0.2
+          </Typography>
         </Box>
-        <Button
-          sx={{ height: '40px', m: 2, }}
-          //size='small'
-          variant='outlined'
-          onClick={auth.logout}  
-        >
-          {intl.formatMessage({ id: 'buttons.apply.changes' })}
-        </Button>
+
         {/* <Divider />
         <List>
           {['All mail'].map((text, index) => (
@@ -202,10 +309,7 @@ export default observer(function Root() {
         autoHideDuration={6000}
         onClose={() => systemStore.displaySnackbar(false)}
         message={systemStore.snackBar.message && intl.formatMessage({ id: systemStore.snackBar.message })}
-        //action={action}
-        
       />
-      
     </Box>
   )
 })

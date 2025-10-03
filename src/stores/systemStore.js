@@ -23,14 +23,13 @@ class SystemStore {
     );
   }
 
-  appState = 'idle'; // 
+  appState = 'competitionsList'; // competitionsList | competitionInProgress
 
   snackBar = {
     visible: false,
     message: '',
   };
 
-  @action
   setAppState(state) {
     this.appState = state;
   }

@@ -63,7 +63,7 @@ export default observer(function TournamentSettings() {
     if (ev.key === 'Enter') {
       ev.preventDefault();
       // ev.target.blur();
-      if (weightCategory?.length > 1) {
+      if (weightCategory?.length > 0) {
         setWeightCategories([...weightCategories, { id: uuidv4(), value: weightCategory }]);
         setWeightCategory('');
       }

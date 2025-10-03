@@ -4,7 +4,7 @@ import { firebaseApp } from "../firebase"
 import { CircularProgress } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 
-const auth = getAuth(firebaseApp);
+export const auth = getAuth(firebaseApp);
 // Create a Google Auth Provider
 const provider = new GoogleAuthProvider();
 console.log('auth', provider, auth)

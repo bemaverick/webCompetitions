@@ -26,9 +26,6 @@ const theme = createTheme();
 
 
 
-
-
-
 const locale = navigator.language;
 let lang;
 if (locale.includes("uk")) {
@@ -41,13 +38,16 @@ if (locale.includes("uk")) {
 // It's recommended to create a cache for better performance
 const cache = createIntlCache();
 // Create the intl object
-export const intl = createIntl(
+const intl = createIntl(
   {
     locale,
-    lang,
+    messages: lang,
   },
   cache
 );
+
+export const getIntl = () => intl;
+console.log('createIntlCache', intl, intl.formatMessage({ id: 'common.hand.left'}))
 
 
 //Browser router was changed to HashRouter

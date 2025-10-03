@@ -32,6 +32,146 @@ import { useIntl } from 'react-intl'
 import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
 import { CATEGORY_STATE, TABLE_STATE } from '../constants/tournamenConfig';
 import { systemStore } from '../stores/systemStore';
+import { getFirestore, collection, query, where } from 'firebase/firestore';
+import { useCollectionDataOnce, useCollectionOnce } from 'react-firebase-hooks/firestore';
+import { firebaseApp } from '../firebase';
+import LinearProgress from '@mui/material/LinearProgress';
+import { auth } from '../contexts/AuthContext';
+import { ResultsByCategories } from '../components/ResultsByCategories';
+import { generateResultsPdf } from '../lib/pdf';
+
+function TabPanel(props) {
+  const intl = useIntl();
+  const { tournamentId, tournament } = props;
+    const [tournamentsSnapshot, loading, error] = useCollectionOnce(
+    collection(getFirestore(firebaseApp), `armGrid_tournaments/${tournamentId}/results`),
+    {
+      snapshotListenOptions: { includeMetadataChanges: false },
+    }
+  )
+  const results = [];
+  const categoriesResults = [];
+
+  tournamentsSnapshot?.docs.map(doc => {
+    const categoryConfig = doc.data().category;
+    const result = doc.data().result;
+    results.push({
+      category: {
+        config: categoryConfig,
+        id: doc.data().id
+      },
+      categoryResults: result
+    });
+    categoriesResults.push({
+      name: generateTournamentCategoryTitle(intl, categoryConfig),
+      results: result.map(({ lastName, firstName }) => `${lastName} ${firstName}`)
+    });
+  });
+
+  if (loading) {
+    return (
+      <LinearProgress />
+    )
+  }
+
+  if (!loading && results.length) {
+    const pdfResults = {
+      title: tournament.tournament.name,
+      date: tournament.tournament.date,
+      categoriesResults: categoriesResults,
+    }
+    console.log('pdfResults', pdfResults);
+    return (
+      <ResultsByCategories
+        results={results}
+        onClickGenerate={() => generateResultsPdf(pdfResults)}
+      />
+    )
+  }
+  return null;
+}
+
+function a11yProps(index) {
+  return {
+    id: `vertical-tab-${index}`,
+    'aria-controls': `vertical-tabpanel-${index}`,
+  };
+}
+
+const TournamentList = observer(() => {
+  const intl = useIntl();
+  const auth = useAuth();
+  const [value, setValue] = React.useState(0);
+  const tournamentCollectionRef = query(
+    collection(getFirestore(firebaseApp), 'armGrid_tournaments'),
+    where("user.uid", "==", auth.user.uid)
+  );
+
+  const [tournamentsSnapshot, loading, error] = useCollectionOnce(
+    tournamentCollectionRef,
+    {
+      snapshotListenOptions: { includeMetadataChanges: false },
+    }
+  )
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ width: '100%' }}>
+        <LinearProgress />
+      </Box>
+    )
+  }
+
+  if (!loading && !tournamentsSnapshot?.docs?.length) {
+    return (
+      <>
+        <Toolbar />
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1,  alignItems: 'center', justifyContent: 'center', pb: 20, border: '1px solid green'}}>
+          <Typography variant="h6" component="h6" sx={{ pb: 4 }}>
+            {intl.formatMessage({ id: 'hint.emptyState.noToutnaments' })}
+          </Typography>
+          <Button
+            sx={{ mt: 2, mb: 3, }}
+            onClick={() => systemStore.setAppState('competitionInProgress')} // TODO move to constants
+            variant='outlined'
+          >
+            {intl.formatMessage({ id: 'button.create.new.tournament' })}
+        </Button>
+        </Box>
+      </>
+    )
+  }
+  return (
+    <Box
+      sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', height: 224 }}
+    >
+      <Tabs
+        orientation="vertical"
+        variant="scrollable"
+        value={value}
+        onChange={handleChange}
+        aria-label="Vertical tabs example"
+        sx={{ borderRight: 1, maxWidth: '250px', borderColor: 'divider' }}
+      >
+        {tournamentsSnapshot.docs.map((doc) => (
+          <Tab key={doc.data().id} label={doc.data().tournament.name} {...a11yProps(0)} />
+        ))}
+      </Tabs>
+      {!!tournamentsSnapshot.docs.length && (
+        <TabPanel
+          tournament={tournamentsSnapshot.docs[value].data()}
+          tournamentId={tournamentsSnapshot.docs[value].id}
+        />
+      )}
+    </Box>
+  )
+
+})
 
 export default observer(function Tournament() {
   const intl = useIntl();
@@ -40,22 +180,29 @@ export default observer(function Tournament() {
   };
 
   return (
-    <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
+    <Stack sx={{ height: '100vh' }}>
       <Toolbar />
-      <Tabs
-        value={tournamentStore.currentTableIndex}
-        onChange={handleTabChange}
-        centered
-      >
-        
-        {Object.keys(tournamentStore.tables).map((table, index) => (
-          <Tab
-            key={index}
-            label={`${intl.formatMessage({ id: "common.table" })} ${index + 1}`}
-          />
-        ))}
-      </Tabs>
-      <TableContent />
+      {systemStore.appState == 'competitionsList' ? (
+        <TournamentList />
+      ) : 
+        <>
+          <Tabs
+            value={tournamentStore.currentTableIndex}
+            onChange={handleTabChange}
+            centered
+          >
+            
+            {Object.keys(tournamentStore.tables).map((table, index) => (
+              <Tab
+                key={index}
+                label={`${intl.formatMessage({ id: "common.table" })} ${index + 1}`}
+              />
+            ))}
+          </Tabs>
+          <TableContent />
+        </>
+      }
+
     </Stack>
   )
 });
@@ -84,7 +231,6 @@ const TableContent = observer((props) => {
       return;
     } 
     const selectedCategoryCompetitorsCount = tournamentStore.selectedCategoryCompetitorsCount(categoryId);
-    console.log('selectedCategoryCompetitorsCount', selectedCategoryCompetitorsCount)
     if (!selectedCategoryCompetitorsCount) {
       systemStore.displaySnackbar(true, 'error.selectedCategory.change.noCompetitors')
       return;
