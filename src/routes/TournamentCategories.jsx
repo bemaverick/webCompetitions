@@ -5,6 +5,14 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Dialog from '@mui/material/Dialog';
+import PeopleIcon from '@mui/icons-material/People';
+import PersonIcon from '@mui/icons-material/Person';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Slide from '@mui/material/Slide';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -12,13 +20,14 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
-import { Button, Stack, Modal, FormControl, MenuItem, Select, InputLabel, Divider, ListSubheader, Chip, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
+import { FormHelperText, Button, Badge, Stack, Modal, FormControl, MenuItem, Select, InputLabel, Divider, ListSubheader, Chip, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField, selectClasses } from '@mui/material';
 
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
+import { styled } from '@mui/material/styles';
+
 import { useNavigate  } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
@@ -28,22 +37,22 @@ import Toolbar from '@mui/material/Toolbar';
 import { toJS } from 'mobx';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
+import { useIntl } from 'react-intl';
+import { CATEGORY_OPEN_ID, CATEGORY_STATE } from '../constants/tournamenConfig';
+import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { systemStore } from '../stores/systemStore';
 
 
-const theme = createTheme();
-
-
-const handTranslations = {
-  left: 'ліва рука',
-  right: 'права рука',
-}
-
-const genderTranslations = {
-  men: 'чоловіки',
-  women: 'жінки',
-}
+const Transition = React.forwardRef(function Transition(
+  props,
+  ref,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default observer(function TournamentCategories() {
+  const intl = useIntl();
+  
   const [creatingCategoryModal, setCreatingCategoryModal] = React.useState(false);
   const [currentCategoryId, setCurrentCategoryId] = React.useState(
     Object.keys(tournamentStore.newTournamentCategories)[0] || ''
@@ -53,13 +62,12 @@ export default observer(function TournamentCategories() {
 
   if (isTournamentCategoriesListEmpty) {
     return (
-      <ThemeProvider theme={theme}>
+      <>
         <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
           <Toolbar />
           <Stack sx={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', p: 2, pb: 4 }}>
             <Typography variant="h6" component="h6" sx={{ mb: 2, textAlign: 'center' }}>
-              Тут буде список турнірних категорій, в яких відбуватиметься боротьба
-              <br />Тисни "Створити турнірну категорію" 👇
+              {intl.formatMessage({ id: 'categories.emptyState' })}
             </Typography>
             <Button
               onClick={() => setCreatingCategoryModal(true)}
@@ -67,42 +75,41 @@ export default observer(function TournamentCategories() {
               size="large"
               variant="contained"
             >
-              Створити турнірну категорію
+              {intl.formatMessage({ id: 'button.create.tournamentCategory' })}
             </Button>
           </Stack>
-         
         </Stack>
         <ModalForCategories
           modalVisible={creatingCategoryModal}
           onClose={() => setCreatingCategoryModal(false)}
           setCurrentCategory={(id) => setCurrentCategoryId(id)}
         />
-      </ThemeProvider>  
+      </>  
     )
   }
 
   return (
-    <ThemeProvider theme={theme}>
+    <>
       <Stack sx={{ flexDirection: 'column', height: '100vh' }}>
         <Toolbar />
         <Stack sx={{ flexGrow: 1, overflow: 'hidden', flexDirection: 'row'}}>
-          <Stack sx={{ flex: 2, overflow: 'scroll', p: 2, pt: 0 }}>
+          <Stack sx={{ flex: 3, overflow: 'scroll', p: 2, pt: 0 }}>
             <List
               sx={{ pt: 0}}
               dense={true}
             >
               <ListSubheader
                 disableGutters
-                sx={{ display: 'flex', pt: 0, backgroundColor: '#fafafa', justifyContent: 'center', borderBottom: '2px solid #ddd', }}>
+                sx={{ display: 'flex', pt: 0, backgroundColor: 'transparent', justifyContent: 'center', borderBottom: '2px solid #ddd', }}
+              >
                 <Button
-                  
                   sx={{ mt: 2, mb: 2 }}
                   onClick={() => setCreatingCategoryModal(true)}
                   color="primary"
                   size="small"
                   variant="contained"
                 >
-                  Створити категорію
+                   {intl.formatMessage({ id: 'button.add.tournamentCategory' })}
                 </Button>
               </ListSubheader>
               {Object.values(tournamentStore.newTournamentCategories).map((category) => (
@@ -111,14 +118,17 @@ export default observer(function TournamentCategories() {
                   selected={currentCategoryId === category.id}
                   key={category.id}
                   id={category.id}
-                  title={category.categoryTitleShort}
-                  subTitle={`${_.upperFirst(genderTranslations[category.config.gender])}, ${handTranslations[category.config.hand]}`}
+                  //Senior Women 50 kg Left
+                  categoryState={category.state}
+                  title={generateTournamentCategoryTitle(intl, category.config)}
+                  subTitle={generateTournamentCategoryTitle(intl, category.config, 'handOnly')}
                 />
               ))}
             </List>
           </Stack>
           <Divider orientation='vertical'></Divider>
           <CategoryDetailsView
+            setCurrentCategoryId={(id) => setCurrentCategoryId(id)}
             tournamentCategoryId={currentCategoryId}
           />
         </Stack>
@@ -128,111 +138,28 @@ export default observer(function TournamentCategories() {
         onClose={() => setCreatingCategoryModal(false)}
         setCurrentCategory={(id) => setCurrentCategoryId(id)}
       />    
-    </ThemeProvider>
+    </>
   )
-
-
-  return (
-    <ThemeProvider theme={theme}>
-      {/* <Alert variant='outlined' severity="info" sx={{ m: 2, }}>
-        <AlertTitle>Увага</AlertTitle>
-        Турнірна категорія формуються з вагової категорії, класифікації та руки на якій відбудеться боротьба (ліва чи права). 
-        Наприклад, категорія "70кг, дорослі чоловіки, ліва рука" сформована з вагової категорії - "70 кг" та класифікації - "дорослі чоловіки".
-      </Alert> */}
-
-      <Grid container spacing={0} sx={{ height: '100vh', backgroundColor: '#eee', overflow: 'hidden' }}>
-        <Grid item xs={12} sx={{ flexGrow: 0 }}>
-          <Stack p={3} direction="row" justifyContent="center">
-            <Button
-              onClick={() => setCreatingCategoryModal(true)}
-              color="primary"
-              size="large"
-              variant="contained"
-            >
-              Створити турнірну категорію
-            </Button>
-          </Stack>
-        </Grid>
-
-        <Grid item xs={12} sx={{ border: '2px solid green', flexGrow: 0 }}>
-          <Grid container  spacing={0}>
-          <Grid item xs={3}
-             sx={{
-              overflow: 'auto',
-              flexGrow: 1, 
-            }}
-        >
-          <List
-         
-            dense={true}
-            //sx={{ pt: 0 }}
-          >
-            {Object.values(tournamentStore.newTournamentCategories).map((category) => (
-              <CategoryItem
-                key={category.id}
-                title={category.categoryTitleShort}
-                subTitle={`${_.upperFirst(genderTranslations[category.config.gender])}, ${handTranslations[category.config.hand]}`}
-              />
-            ))}
-          </List>
-        </Grid>
-        <Grid item xs={9} sx={{ border: '1px solid green' }}>
-        <List>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <DoneIcon />
-                </ListItemIcon>
-                <ListItemText primary="Inbox" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <DoneIcon />
-                </ListItemIcon>
-                <ListItemText primary="Drafts" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Grid>
-
-          </Grid>
-        </Grid>
-      </Grid>
-      <ModalForCategories modalVisible={creatingCategoryModal} onClose={() => setCreatingCategoryModal(false)} />
-    </ThemeProvider>
-  )
-
-  return (
-    <ThemeProvider theme={theme}>
-      <Container component="main" maxWidth="xm">
-        <Box
-          sx={{
-            marginTop: 8,
-            width: '90%'
-          }}
-        >
-          <h4>Турнірні Категорії</h4>
-
-          <div>
-            {Object.keys(tournamentStore.tournamentCategories).map((category) => (
-              <>
-                <p style={{ backgroundColor: '#eee', marginTop: '20px', padding: '12px' }}>{category}</p>
-                <BasicTable data={_.filter(tournamentStore.competitorsList, (competitor) => competitor.category == category)}>
-
-                </BasicTable>
-              </>
-            ))}
-          </div>
-
-        </Box>
-      </Container>
-    </ThemeProvider>
-  );
 })
 
-const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
+// const StyledBadge = styled(Badge)(({ theme }) => ({
+//   '& .MuiBadge-badge': {
+//     right: -3,
+//     top: 13,
+//     border: `2px solid ${(theme.vars ?? theme).palette.background.paper}`,
+//     padding: '0 4px',
+    
+//   },
+// }));
+
+
+const CategoryItem = ({ title, subTitle, id, onClick, selected, categoryState }) => {
+  const intl = useIntl();
+  const stateLabel = intl.formatMessage({ id: categoryStateTranslationsKey[categoryState] });
+  const competitorsNumberInCategory = tournamentStore.competitorsList
+    .reduce((accumulator, current) => accumulator + (current.tournamentCategoryIds.includes(id) ? 1 : 0), 0);
+//  const secondary = competitorsNumberInCategory >= 1 ? `${subTitle} | ${competitorsNumberInCategory} athletes` : subTitle;
+  
   return (
     <ListItem divider disablePadding>
       <ListItemButton selected={selected} onClick={onClick}>
@@ -240,21 +167,31 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected }) => {
           primary={title}
           secondary={subTitle}
         />
+       {competitorsNumberInCategory > 0 && (
+          <Badge sx={{ mx: 1 }}  badgeContent={competitorsNumberInCategory} color="info">
+            <PersonIcon color="disabled" />
+          </Badge>
+       )}
+
+        <Chip size='small' sx={{ mx: 1, mr: 0 }} label={stateLabel} color={categoryChipStyle[categoryState]} />
       </ListItemButton>
     </ListItem>
   )
 }
 
-
 const CategoryDetailsView = observer((props) => {
+  const navigate = useNavigate();
+  const intl = useIntl();
+  const [removalConfirmationModal, setRemovalConfirmationModal] = React.useState(false);
+
   const currentTournamentCategory = tournamentStore.newTournamentCategories[props.tournamentCategoryId];
+  const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
   const [editModalVisble, setEditModalVisble] = React.useState(false);
   const [selectedCompetitor, setSelectedCompetitor] = React.useState(null);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const navigate = useNavigate();
 
   const navigateToCompetitors = () => {
-    navigate('/tournamentCompetitors', { state: { tournamentCategoryId: props.tournamentCategoryId }});
+    navigate('/tournamentParticipants', { state: { tournamentCategoryId: props.tournamentCategoryId }});
   }
 
   const categoryCompetitorsList = React.useMemo(() => {
@@ -271,26 +208,53 @@ const CategoryDetailsView = observer((props) => {
 
   }, [props.tournamentCategoryId, tournamentStore.competitorsList, searchQuery]);
   //console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
+
+  const removeCategory = () => { 
+    setRemovalConfirmationModal(false);
+    const isCategoryAlreadyLaunched = tournamentStore.newTournamentCategories[props.tournamentCategoryId].state !== CATEGORY_STATE.IDLE;
+    if (isCategoryAlreadyLaunched) {
+      systemStore.displaySnackbar(true, 'error.selectedCategory.inProgress.remove');
+      return;
+    }
+    const isFirstItem = Object.keys(tournamentStore.newTournamentCategories)[0] === props.tournamentCategoryId;
+    props.setCurrentCategoryId(isFirstItem ? (Object.keys(tournamentStore.newTournamentCategories)[1] || '') : Object.keys(tournamentStore.newTournamentCategories)[0]);
+    //kind of crutch to prevent for access to undefined in  currentTournamentCategory.config  
+    tournamentStore.removeTournamentCategory(props.tournamentCategoryId)
+  }
+
+  const onDeleteCompetitor = (competitorId) => {
+    const categoryState = tournamentStore.newTournamentCategories[props.tournamentCategoryId].state;
+    if (categoryState === CATEGORY_STATE.IDLE) {
+      tournamentStore.removeCompetitorFromCategory(competitorId, props.tournamentCategoryId);
+
+    } else {
+      systemStore.displaySnackbar(true, intl.formatMessage({ id: 'warning.category.specific.delete.athlete' }));
+    }
+  }
+
+  const addAthetesEnabled = currentTournamentCategory.state === CATEGORY_STATE.IDLE
   
   return (
     <>
-      <Stack sx={{ flex: 9, flexDirection: 'column', p: 2 }}>
+      <Stack sx={{ flex: 7, flexDirection: 'column', p: 2 }}>
         <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
-          {currentTournamentCategory?.categoryTitleFull}
+          {generateTournamentCategoryTitle(intl, currentTournamentCategory.config, 'full')}
         </Typography>
-        <Grid container justifyContent={'center'} sx={{ p: 2 }}>
-          <Grid item xs={3}>
-            <Button
-              //sx={{ height: '40px', mt: 2 }}
-              size='noraml'
-              fullWidth
-              variant='contained'
-              onClick={navigateToCompetitors}
-            >
-              Додати учасника
-            </Button>
+        {addAthetesEnabled && (
+          <Grid container justifyContent={'center'} sx={{ p: 2 }}>
+            <Grid item xs={3}>
+              <Button
+                //sx={{ height: '40px', mt: 2 }}
+                size='noraml'
+                fullWidth
+                variant='contained'
+                onClick={navigateToCompetitors}
+              >
+                {intl.formatMessage({ id: 'buttons.add.participant' })}
+              </Button>
+            </Grid>
           </Grid>
-        </Grid>
+        )}
         <Stack elevation={2} sx={{ flexGrow: 1, mt: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
           <TextField
             fullWidth
@@ -300,7 +264,7 @@ const CategoryDetailsView = observer((props) => {
               setSearchQuery(event.target.value);
             }}
             id="outlined-basic"
-            label="Пошук по учасниках"
+            label={intl.formatMessage({ id: 'search.by.participants' })}
             variant="outlined"
             value={searchQuery}
           />
@@ -312,7 +276,7 @@ const CategoryDetailsView = observer((props) => {
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
                 present={competitor.present}
-                weight={`${competitor.weight} ${tournamentStore.weightUnit.label}`}
+                weight={`${competitor.weight} ${weightUnitLabel}`}
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
                 )}
@@ -320,7 +284,7 @@ const CategoryDetailsView = observer((props) => {
                   setEditModalVisble(true);
                   setSelectedCompetitor(competitor);
                 }}
-                onDelete={() => tournamentStore.removeCompetitorFromCategory(competitor.id, props.tournamentCategoryId)}
+                onDelete={() => onDeleteCompetitor(competitor.id)}
               />
             ))}
           </Stack>
@@ -330,9 +294,9 @@ const CategoryDetailsView = observer((props) => {
             color='error'
             size='small'
             variant='outlined'
-            onClick={() => tournamentStore.removeTournamentCategory(props.tournamentCategoryId)}
+            onClick={() => setRemovalConfirmationModal(true)}
             >
-              Видалити категорію
+              {intl.formatMessage({ id: 'buttons.remove.category' })}
           </Button>
         </Box>
       </Stack>
@@ -346,11 +310,17 @@ const CategoryDetailsView = observer((props) => {
         competitor={selectedCompetitor}
         modalVisible={editModalVisble}
       /> 
+      <AlertDialogSlide
+        state={removalConfirmationModal}
+        onClose={() => setRemovalConfirmationModal(false)}
+        onAgree={() => removeCategory()}
+        
+      />
     </>
   )
 })
 
-const modalChildreContainerStyle = {
+const modalChildrenContainerStyle = {
   position: 'absolute',
   top: '50%',
   left: '50%',
@@ -362,12 +332,15 @@ const modalChildreContainerStyle = {
 }
 
 const ModalForCategories = observer((props) => {
-  const weightUnitLabel = tournamentStore.weightUnit.label;
-  const [classification, setClassification] = React.useState({ id: '', label: '' });
+  const intl = useIntl();
+  const [validationErrors, showValidationErrors] = React.useState(false);
+  const [numberOfCategories, setNumberOfCategories] = React.useState(0);
+  const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
+  const [classification, setClassification] = React.useState(tournamentStore.classificationCategories[0]);
   const [selectedWeightCategories, setSelectedWeightCategories] = React.useState({});
   const [checkboxes, setCheckboxes] = React.useState({
     men: true,
-    women: true,
+    women: false,
     left: true,
     right: true,
   });
@@ -380,8 +353,15 @@ const ModalForCategories = observer((props) => {
     });
   };
 
+  React.useEffect(() => {
+    if (validationErrors && !_.isEmpty(selectedWeightCategories)) {
+      showValidationErrors(false);
+    }
+  }, selectedWeightCategories, validationErrors);
 
   const selectWeightCategory = (weightCategory) => {
+
+
     const copyOfSelectedCategories = _.cloneDeep(selectedWeightCategories);
     if (selectedWeightCategories[weightCategory.value]) { //remove selected category
       delete copyOfSelectedCategories[weightCategory.value];
@@ -392,6 +372,13 @@ const ModalForCategories = observer((props) => {
   }
   
   const onSave = () => {
+    console.log('selectedWeightCategories', selectedWeightCategories)
+    if (_.isEmpty(selectedWeightCategories) || (!checkboxes.left && !checkboxes.right) || (!checkboxes.men && !checkboxes.women)) {
+      showValidationErrors(true);
+      return;
+    } else {
+      showValidationErrors(false);
+    }
     props.onClose();
     tournamentStore.createTournamentCategories({
       classification,
@@ -401,12 +388,30 @@ const ModalForCategories = observer((props) => {
       men,
       women
     });
-    console.log('current', Object.keys(tournamentStore.newTournamentCategories)[0])
     props.setCurrentCategory(Object.keys(tournamentStore.newTournamentCategories)[0]);
-
   }
 
-  console.log('selectedWeightCategories', selectedWeightCategories)
+  React.useEffect(() => {
+    let totalCount = 0;
+    if (classification.id && !_.isEmpty(selectedWeightCategories) && Object.values(checkboxes).some(el => el)) {
+      const weightCategoriesNumber = Object.keys(selectedWeightCategories).length;
+      const handsNumber = left && right ? 2 : 1;
+      const genderNumber = men && women ? 2 : 1;
+      const multiplier = handsNumber * genderNumber;
+
+      console.log(multiplier, Object.values(checkboxes), checkboxes);
+      totalCount = weightCategoriesNumber * multiplier;
+    }
+    setNumberOfCategories(totalCount);
+  }, [checkboxes, classification, selectedWeightCategories])
+
+
+  const selectClassification = (event) => {
+    const classificationId = event.target.value;
+    const selectedClassification = tournamentStore.classificationCategories.find(classification => classification.id === classificationId);
+    setClassification(selectedClassification);
+  }
+
   return (
     <Modal
       open={props.modalVisible}
@@ -414,27 +419,36 @@ const ModalForCategories = observer((props) => {
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
    >
-      <Box sx={modalChildreContainerStyle}>
+      <Box sx={modalChildrenContainerStyle}>
         <Typography variant="h6" component="h6" sx={{ p: 0.5, pb: 3, textAlign: 'center' }}>
-            Конструктор категорій
+          {intl.formatMessage({ id: 'categories.title.builder'})}
         </Typography>
         <FormControl fullWidth>
-          <InputLabel id="demo-simple-select-label">Класифікація</InputLabel>
+          <InputLabel id="demo-simple-select-label">
+            {intl.formatMessage({ id: 'common.classification'})}
+          </InputLabel>
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
             value={classification.id}
-            label="Класифікація"
+            label={intl.formatMessage({ id: 'common.classification'})}
             //onChange={(event) => console.log('event', event.target.value,_.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value))}
-            onChange={(event) => setClassification({ id: event.target.value, label: _.find(tournamentStore.classificationCategories, (item) => item.id == event.target.value).label })}
+            onChange={selectClassification}
           >
             {tournamentStore.classificationCategories.map((classificationCategory) => (
-              <MenuItem key={classificationCategory.id} value={classificationCategory.id}>{classificationCategory.label}</MenuItem>
+              <MenuItem
+        
+                key={classificationCategory.id}
+                value={classificationCategory.id}
+
+              >
+                {classificationCategory.label || intl.formatMessage({ id: classificationCategory.labelKey })}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
         <Typography gutterBottom variant="body1" sx={{ mt: 2 }}>
-          Вагові категорії
+          {intl.formatMessage({ id: 'common.select.weightCategories'})}:
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap">
           {tournamentStore.weightCategories.map((weightCategory) => {
@@ -444,7 +458,8 @@ const ModalForCategories = observer((props) => {
                 sx={{ mb: 1 }}
                 key={weightCategory.id}
                 color={isSelected ? 'success' : 'default'}
-                label={`${weightCategory.value} ${weightUnitLabel}`}
+               // label={`${weightCategory.value} ${weightUnitLabel}`}
+                label={weightCategory.id === CATEGORY_OPEN_ID ? intl.formatMessage({ id: "category.open" }) : `${weightCategory.value} ${weightUnitLabel}`}
                 onClick={() => selectWeightCategory(weightCategory)}
                 deleteIcon={isSelected ? <DoneIcon /> : undefined}
                 onDelete={isSelected ? () => selectWeightCategory(weightCategory) : undefined}
@@ -452,86 +467,69 @@ const ModalForCategories = observer((props) => {
             )
           })}
         </Stack>
-
+        {validationErrors && _.isEmpty(selectWeightCategory) && <FormHelperText sx={{ py: 2 }} error>{intl.formatMessage({ id: 'common.select.weightCategories'})}</FormHelperText>}
         <Grid container sx={{ justifyContent: 'center', mt: 2, }}>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
-              Cтать
+              {intl.formatMessage({ id: 'common.sex'})}:
             </Typography>
-            <FormControlLabel control={<Checkbox color="success" checked={men} onChange={handleChange} name='men' />} label="чоловіки" />
-            <FormControlLabel control={<Checkbox color="success" checked={women} onChange={handleChange} name='women' />} label="жінки" />
+            <FormControlLabel control={<Checkbox color="success" checked={men} onChange={handleChange} name='men' />} label={intl.formatMessage({ id: 'common.sex.men'})} />
+            <FormControlLabel control={<Checkbox color="success" checked={women} onChange={handleChange} name='women' />} label= {intl.formatMessage({ id: 'common.sex.women'})} />
+            {validationErrors && (!checkboxes.men && !checkboxes.women) && <FormHelperText error>{intl.formatMessage({ id: 'validation.commong.required'})}</FormHelperText>}
           </Grid>
           <Grid item xs={6}>
             <Typography gutterBottom variant="body1" sx={{ mt: 2, }}>
-              Рука
+              {intl.formatMessage({ id: 'common.hand'})}:
             </Typography>
-            <FormControlLabel control={<Checkbox color="success" checked={left} onChange={handleChange} name='left' />} label="ліва" />
-            <FormControlLabel control={<Checkbox color="success" checked={right} onChange={handleChange} name='right' />} label="права" />
+            <FormControlLabel control={<Checkbox color="success" checked={left} onChange={handleChange} name='left' />} label={intl.formatMessage({ id: 'common.hand.left'})} />
+            <FormControlLabel control={<Checkbox color="success" checked={right} onChange={handleChange} name='right' />} label={intl.formatMessage({ id: 'common.hand.right'})} />
+            {validationErrors && (!checkboxes.left && !checkboxes.right) && <FormHelperText error>{intl.formatMessage({ id: 'validation.commong.required'})}</FormHelperText>}
           </Grid>
         </Grid>
-
-        <Stack direction="row" spacing={2} sx={{ justifyContent: "center", mt: 3, mb: 0 }}>
+        <Typography variant="subtitle1" component="h6" sx={{ pt: 2, textAlign: 'center' }}>
+          {intl.formatMessage({ id: 'hint.tournamentCategories.count.beGenerated'})} [{numberOfCategories}]
+        </Typography>
+        <Stack direction="row" spacing={2} sx={{ justifyContent: "center", mt: 1.5, mb: 0 }}>
           <Button
-              onClick={onSave}
-              color="primary"
-              size="large"
-              variant="outlined"
-            >
-              Створити категорії
-            </Button>
+            onClick={onSave}
+            color="primary"
+            size="large"
+            variant="outlined"
+          >
+            {intl.formatMessage({ id: 'buttons.create.categories'})}
+          </Button>
         </Stack>
-        
-        {/* <Grid container sx={{ justifyContent: 'center', mt: 0 }}>
-          <Grid item xs={10} ml={2} mr={2} >
-            <Card raised>
-              <CardContent>
-                <Stack direction="row" spacing={0} sx={{  justifyContent: "center" }}>
-                  <Button
-                      onClick={() => setCreatingCategoryModal(true)}
-                      color="primary"
-                      size="large"
-                      variant="contained"
-                    >
-                      Створити турнірну категорію
-                    </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid> */}
       </Box>
     </Modal>
   )
-})
+});
 
-function BasicTable(props) {
+function AlertDialogSlide(props) {
+  const intl = useIntl();
+
   return (
-    <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }} aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell>Прізвище</TableCell>
-            <TableCell align="right">Ім'я</TableCell>
-            <TableCell align="right">Вага</TableCell>
-            <TableCell align="right">Категорія</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {props.data.map((row) => (
-            <TableRow
-              key={row.id}
-              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-            >
-              <TableCell component="th" scope="row">
-                {row.lastName}
-              </TableCell>
-              <TableCell align="right">{row.firstName}</TableCell>
-              <TableCell align="right">{row.weight}</TableCell>
-              <TableCell align="right">{row.category}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <React.Fragment>
+      <Dialog
+        open={props.state}
+        slots={{
+          transition: Transition,
+        }}
+        keepMounted
+        onClose={props.onClose}
+        aria-describedby="alert-dialog-slide-description"
+      >
+        <DialogTitle>{intl.formatMessage({ id: 'warning.category.remove.confirmationModal1' })}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-slide-description">
+            {intl.formatMessage({ id: 'warning.category.remove.confirmationModal2' })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={props.onClose}>{intl.formatMessage({ id: 'buttons.cancel' })}</Button>
+          <Button color='error' onClick={props.onAgree}>{intl.formatMessage({ id: 'buttons.remove.category' })}</Button>
+        </DialogActions>
+      </Dialog>
+    </React.Fragment>
   );
 }
+

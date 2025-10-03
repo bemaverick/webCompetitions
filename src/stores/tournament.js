@@ -2,94 +2,13 @@
 
 import { makeAutoObservable, autorun, toJS } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
-import _ from 'lodash';
+import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
-
-const FAKE_tournamentCategories = {
-  '90_man_left': [],
-  '90_man_right': [],
-  '110_man_left': [],
-  '110_man_right': [],
-};
-
-const FAKE_competitorsList = [
-  { firstName: 'Сергій', lastName: 'Іванчук', weight: '88', category: '90_man_left', id: '1'},
-  { firstName: 'Рустам', lastName: 'Стерненко', weight: '88', category: '90_man_left', id: '2'},
-  { firstName: 'Антон', lastName: 'Умаров', weight: '88', category: '90_man_left', id: '3'},
-  { firstName: 'Андрій', lastName: 'Олійник', weight: '90', category: '90_man_left', id: '4'},
-  // { firstName: 'Іван', lastName: 'Драганчук', weight: '88', category: '90_man_left', id: '5'},
-  // { firstName: 'Павло', lastName: 'Курильчик', weight: '93', category: '90_man_left', id: '6'},
-  // { firstName: 'Тарас', lastName: 'Сергійчук', weight: '88', category: '90_man_left', id: '7'},
-  // { firstName: 'Олег', lastName: 'Попов', weight: '90', category: '90_man_left', id: '8'},
-  // { firstName: 'Сергій', lastName: 'Дьомін', weight: '88', category: '90_man_left', id: '9'},
-  // { firstName: 'Микола', lastName: 'Попенко', weight: '88', category: '90_man_left', id: '10'},
-  // { firstName: 'Степан', lastName: 'Савченко', weight: '87', category: '90_man_left', id: '11'},
-  // { firstName: 'Платон', lastName: 'Раменко', weight: '88', category: '90_man_left', id: '12'},
-  { firstName: 'Мирослав', lastName: 'Федоренко', weight: '85', category: '90_man_left', id: '13'},
-  { firstName: 'Кирило', lastName: 'Буданов', weight: '88', category: '90_man_left', id: '14'},
-  { firstName: 'Ренат', lastName: 'Ізмаїлов', weight: '86', category: '90_man_left', id: '15'},
-  { firstName: 'Максим', lastName: 'Куценко', weight: '90', category: '90_man_left', id: '16'},
-  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '90_man_left', id: '17'},
-  { firstName: 'Кирило', lastName: 'Буданов', weight: '88', category: '110_man_right', id: '18'},
-  { firstName: 'Ренат', lastName: 'Ізмаїлов', weight: '86', category: '110_man_right', id: '19'},
-  { firstName: 'Максим', lastName: 'Куценко', weight: '90', category: '110_man_right', id: '16'},
-  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '110_man_right', id: '20'},
-]
-
-
-//  { firstName: 'Євгеній', lastName: 'Вовченко', weight: '91', category: '110_man_right', id: '20', stats: { 0: { result: 'win' }}},
-//result can be win|lose|idle
-
-
-const weightCategoriesDefault = [
-  {
-    id: '60',
-    value: '60',
-  }, {
-    id: '70',
-    value: '70',
-  }, {
-    id: '80',
-    value: '80',
-    
-  }, {
-    id: '90',
-    value: '90',
-    
-  }, {
-    id: '100',
-    value: '100',
-    
-  }, {
-    id: '100+',
-    value: '100+',
-  }, {
-    id: 'xxx',
-    value: 'абсолютна',
-  }
-]
-
-const classificationCategoriesDefault = [
-  {
-    id: '1',
-    label: 'Дорослі',
-  }, {
-    id: '2',
-    label: 'Юніори',
-  }, {
-    id: '3',
-    label: 'Молодь',
-  }, {
-    id: '4',
-    label: 'Ветерани',
-  }, {
-    id: '5',
-    label: 'Професіонали',
-  }, {
-    id: '6',
-    label: 'Аматори',
-  },
-]
+import { CATEGORY_STATE, CLASSIFICATION_LIST_DEFAULT, HANDS, MATCH_RESULT, SEX, TABLE_INITIAL_STATE, TABLE_STATE, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
+import { createTournamentCategoryConfig, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { fromUnixTime, format } from 'date-fns';
+import { getIntl } from '../routes/App';
+// import { intl } from '../routes/App';
 
 class TournamentStore {
   constructor() {
@@ -98,7 +17,7 @@ class TournamentStore {
     makePersistable(
       this,
       {
-        name: 'SampleStore',
+        name: 'TournamentStore',
         properties: [
           'tournamentName',
           'tournamentDate',
@@ -110,14 +29,16 @@ class TournamentStore {
           'newTournamentCategories',
           'competitorsList',
           'results',
-          'postponedCategoriesProgress'
+          'postponedCategoriesProgress',
+          'weightUnit',
+
         ],
         storage: window.localStorage
       }
     );
   }
 
-  weightUnit = { value: 'kg', factor: 1, label: 'кг' };
+  weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
 
   tournamentName = '';
 
@@ -127,99 +48,59 @@ class TournamentStore {
 
   currentTableIndex = 0;
 
-  //groupA[competitorIndex].results[roundId].result === win || false
   tables = {
-    0: {
-      category: '',
-      state: 'idle', //idle, started, or finished
-      rounds: {
-        0: {
-          groupA: [],
-          groupB: []
-        }
-      },
-      selectedRound: 0
-    },
-    1: {
-      category: '',
-      state: 'idle',
-      rounds: {
-        0: {
-          groupA: [],
-          groupB: []
-        }
-      },
-      selectedRound: 0
-    },
-    2: {
-      category: '',
-      state: 'idle',
-      rounds: {
-        0: {
-          groupA: [],
-          groupB: []
-        }
-      },
-      selectedRound: 0
-    },
+    0: TABLE_INITIAL_STATE,
+    1: TABLE_INITIAL_STATE,
+    2: TABLE_INITIAL_STATE,
   }
 
-  weightCategories = weightCategoriesDefault;
+  weightCategories = WEIGHT_CATEGORIES_DEFAULT;
 
-  classificationCategories = classificationCategoriesDefault;
+  classificationCategories = CLASSIFICATION_LIST_DEFAULT;
 
-  tournamentCategories = FAKE_tournamentCategories;
+//tournamentCategories = {};
 
-  newTournamentCategories = {
+  newTournamentCategories = {}; // should be renamed
 
-  }
-
-  postponedCategoriesProgress = {
-
-  }
+  postponedCategoriesProgress = {}; // when user presses pause category progress is saving here
 
   competitorsList = [];
-  // competitorsList = FAKE_competitorsList;
 
-
-  results = {};
+  results = {}; // can be renamed to tournament results;
 
   setTournamentBasicSettings = ({ 
     tournamentName,
     tournamentDate,
     tablesCount,
     weightCategories,
-    classificationCategories
+    classificationCategories,
+    weightUnit,
   }) => {
-    console.log('setTournamentBasicSettings', weightCategories, classificationCategories)
     this.tournamentName = tournamentName;
     this.tournamentDate = tournamentDate;
     this.weightCategories = weightCategories;
     this.classificationCategories = classificationCategories;
     this.setTablesConfig(tablesCount);
+    this.weightUnit = weightUnit;
   }
 
-  setTournamentName = (name) => this.tournamentName = name;
-
-  setTournamentDate = (date) => this.tournamentDate = date;
-
   setTablesConfig = (tablesCount) => {
-    this.tablesCount = tablesCount;
-    for (let i = 0; i < tablesCount; i ++ ) {
-      this.tables[i] = {
-        state: 'idle',
-        category: '',
-        rounds: { 0: { groupA: [], groupB: [] }},
-        selectedRound: 0,
-      } 
+    this.tablesCount = tablesCount;  
+  //  this.tables = {}; //reset and then fill                
+    for (let i = 0; i < tablesCount; i++ ) {
+      this.tables[i] = this.tables[i] || TABLE_INITIAL_STATE;
     }
-    console.log(toJS(this.tables));
+    if (tablesCount < 6) { // clear old tables with idle status;
+      for (let i = tablesCount; i < 6; i++ ) {
+        delete this.tables[i];
+      }
+    }
+    this.setCurrentTableIndex(this.currentTableIndex < tablesCount ? this.currentTableIndex : 0); // switch to exist table
   };
 
   setCurrentTableIndex = (index) => this.currentTableIndex = index;
 
   setSelectedRoundIndex = (index) => this.currentTable.selectedRound = index;
-
 
   addWeightCategory = (weightCategory) => {
     this.weightCategories = [...this.weightCategories, weightCategory];
@@ -229,78 +110,51 @@ class TournamentStore {
     this.classificationCategories = [...this.classificationCategories, clasiffications];
   };
 
-  addCategory = ({ weight, classification, hand }) => {
-    this.tournamentCategories = {
-      ...this.tournamentCategories,
-      [`${weight}_${classification}_${hand}`]: []
-    }
-    console.log('tournamentCategories', this.tournamentCategories)
-  }
-
   createTournamentCategories = ({ classification, weightCategories, leftHand, rightHand, men, women }) => {
     const createdCategories = {};
-
     for (const [key, category] of Object.entries(weightCategories)) {
-      const categoryTitleShort = `${classification.label} ${category.value} ${this.weightUnit.label}`;
+      // const categoryTitleShort = `${classification.label} ${category.value} ${this.weightUnit.label}`;
+      // const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, mans, left hand`;
       const configDefaults = {
         classification: _.cloneDeep(classification),
         weightCategory: _.cloneDeep(category),
       }
       if (leftHand && men) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, чоловіки, ліва рука`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-          config: {
-            ...configDefaults,
-            hand: 'left',
-            gender: 'men',
-          }
-        };
+        const isCategoryAlreadyPresented = Object.values(tournamentStore.newTournamentCategories).some(({ config }) => {
+          return _.isEqual(classification, config.classification) && _.isEqual(category, config.weightCategory) && config.hand === HANDS.LEFT && config.sex === SEX.MEN
+        })
+        if (!isCategoryAlreadyPresented) {
+          createdCategories[id] = createTournamentCategoryConfig(id, HANDS.LEFT, SEX.MEN, configDefaults);
+        }
+        console.log('isCategoryAlreadyPresented', isCategoryAlreadyPresented, classification, category);
       }
       if (rightHand && men) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, чоловіки, права рука`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-          config: {
-            ...configDefaults,
-            hand: 'right',
-            gender: 'men',
-          }
-        };
+        const isCategoryAlreadyPresented = Object.values(tournamentStore.newTournamentCategories).some(({ config }) => {
+          return _.isEqual(classification, config.classification) && _.isEqual(category, config.weightCategory) && config.hand === HANDS.RIGHT && config.sex === SEX.MEN
+        })
+        if (!isCategoryAlreadyPresented) {
+          createdCategories[id] = createTournamentCategoryConfig(id, HANDS.RIGHT, SEX.MEN, configDefaults);
+        }
       }
       if (leftHand && women) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, жінки, ліва рука`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-          config: {
-            ...configDefaults,
-            hand: 'left',
-            gender: 'women',
-          }
-        };
+        const isCategoryAlreadyPresented = Object.values(tournamentStore.newTournamentCategories).some(({ config }) => {
+          return _.isEqual(classification, config.classification) && _.isEqual(category, config.weightCategory) && config.hand === HANDS.LEFT && config.sex === SEX.WOMEN
+        })
+        if (!isCategoryAlreadyPresented) {
+          createdCategories[id] = createTournamentCategoryConfig(id, HANDS.LEFT, SEX.WOMEN, configDefaults);
+        }
       }
       if (rightHand && women) {
         const id = uuidv4();
-        const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, жінки, права рука`;
-        createdCategories[id] = {
-          categoryTitleFull,
-          categoryTitleShort,
-          id,
-          config: {
-            ...configDefaults,
-            hand: 'right',
-            gender: 'women',
-          }
-        };
+        const isCategoryAlreadyPresented = Object.values(tournamentStore.newTournamentCategories).some(({ config }) => {
+          return _.isEqual(classification, config.classification) && _.isEqual(category, config.weightCategory) && config.hand === HANDS.RIGHT && config.sex === SEX.WOMEN
+        })
+        if (!isCategoryAlreadyPresented) {
+          createdCategories[id] = createTournamentCategoryConfig(id, HANDS.RIGHT, SEX.WOMEN, configDefaults);
+        }
       }
     }
   
@@ -308,9 +162,6 @@ class TournamentStore {
       ...createdCategories,
       ...this.newTournamentCategories,
     };
-
-    console.log(classification, Object.values(weightCategories), leftHand, rightHand, men, women)
-    console.log("createdCategories", createdCategories)
   }
 
   removeTournamentCategory = (tournamentCategoryId) => {
@@ -331,19 +182,17 @@ class TournamentStore {
 
 
   addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds, present }) => {
-
     const newCompetitor = {
       tournamentCategoryIds,
-      // leftHand: tournamentCategory.config.hand === 'left',
-      // rightHand: tournamentCategory.config.hand === 'right',
-      // gender: tournamentCategory.config.gender,
       firstName, 
       lastName, 
       weight, 
       id: uuidv4(),
       present
     }
-    this.competitorsList = [...this.competitorsList, newCompetitor];
+    //this.competitorsList = [newCompetitor, ...this.competitorsList];
+    this.competitorsList.unshift(newCompetitor);
+
   }
 
   editCompetitor = (editedCompetitor) => {
@@ -357,7 +206,7 @@ class TournamentStore {
   removeCompetitorFromCategory = (competitorId, tournamentCategoryId) => {
     const competitorIndex = this.competitorsList.findIndex((competitor) => competitor.id === competitorId);
     const updatedTournamentCategoryIds = this.competitorsList[competitorIndex].tournamentCategoryIds.filter((id) => id !== tournamentCategoryId);
-    if (!updatedTournamentCategoryIds.length) { //copmetitor was presented only in this category, should be removed
+    if (!updatedTournamentCategoryIds.length) { // competitor was presented only in this category, should be removed
       this.competitorsList = this.competitorsList.filter((competitor) => competitor.id !== competitorId);
     } else { // competitor is presented in other categories, so tournamentCategoryIds should be updated;\
       this.competitorsList = this.competitorsList.map((competitor) => {
@@ -378,51 +227,115 @@ class TournamentStore {
   }
 
   setTableStatus = (tableId, state) => {
-    if (state === 'started') {
+    if (state === TABLE_STATE.IN_PROGRESS) {
       this.setupFirstRound(tableId);
     }
-    if (state === 'idle') {
-      this.tables[tableId] = { // initial
-        category: '',
-        state: 'idle', //idle, started, or finished
-        rounds: {
-          0: {
-            groupA: [],
-            groupB: []
-          }
-        },
-        selectedRound: 0
-      };
+    if (state === TABLE_STATE.IDLE) {
+      this.tables[tableId] = TABLE_INITIAL_STATE;
     }
+
     this.tables[tableId].state = state;
+  }
+
+  setTournamentCategoryStatus = (status) => { //idle, in_progress, paused, finished see CATEGORY_STATE
+    const currentCategoryId = this.currentTable.category;
+    this.newTournamentCategories[currentCategoryId].state = status;
   }
 
   setupFirstRound = () => {
     const actualCategory = this.competitorsList.filter(
       ({ present, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && present
     );
-    const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: 'idle' }}}))
-    this.currentTable.rounds[0].groupA = _.shuffle(groupA);
+    const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: MATCH_RESULT.IDLE }}}))
+    this.currentTable.rounds[0].groupA = _.shuffle(groupA); // TODOD check
+    //this.currentTable.rounds[0].groupA = groupA;
+    
     this.currentTable.selectedRound = 0;
     this.currentRound.groupB = [];
+    this.currentRound.finalist = null;
+    this.currentRound.semifinalist = null;
   }
 
   startNextRound = () => {
-    const nextRoundIndex = +this.currentRoundIndex + 1; //fix this
+    const nextRoundIndex = this.currentRoundIndex + 1;
     const newRoundGroupA = [];
     let newRoundGroupB = [];
-    const finishedGroup = [];
+    let finalist = this.currentFinalist;
+    let semifinalist = this.currentSemiFinalist;
+    const finishedGroup = []; // list of competitors who have finished in current round;
+    let exitToFinal = false; // who will go to final and who to semifinal, both competitors with no loses;
+    let isSuperFinal = false; // when groupB is empty and there are 2 competitors in groupA with 1 lose for each;
+    console.log('initial finalist',  finalist)
+		console.log('initial semifinalist',  semifinalist)
 
- 
     this.currentGroupA.map((competitor, index) => {
-      const isLastPairIncomplete = (index === this.currentGroupA.length - 1) && this.currentGroupA.length % 2 === 1;
-      const isCompetitorWinner = competitor.stats[this.currentRoundIndex].result === 'win';
-      const isCompetitorLoser = competitor.stats[this.currentRoundIndex].result === 'lose';
-      //IN THE FINAL IN GROUP A CAN BE A COMPETITOR WITH LOSES, WE NEED TO COUNT LOSEESl
-      const numberOfLoses = Object.values(competitor.stats).reduce((prev, current) => prev + (current.result === 'lose' ? 1 : 0), 0);
-      console.log(competitor.lastName, numberOfLoses, JSON.stringify(competitor.stats))
+      const currentGroupALength = this.currentGroupA.length;
+      const isLastPairIncomplete = (index === currentGroupALength - 1) && currentGroupALength % 2 === 1; 
+      const isCompetitorWinner = competitor.stats[this.currentRoundIndex].result === MATCH_RESULT.WIN;
+      const isCompetitorLoser = competitor.stats[this.currentRoundIndex].result === MATCH_RESULT.LOSE;
 
-      // 2 LOSES IN A => COMPETITOR FINISHING
+      if (currentGroupALength === 2 && index === 0) { // 
+        const firstCompetitorLosesCountInPrevRoounds = Object.keys(competitor.stats) //we dont count lose in current round
+          .reduce((prev, current) => prev + (competitor.stats[current].result === MATCH_RESULT.LOSE && current != this.currentRoundIndex ? 1 : 0), 0);
+        const secondCompetitorLosesCountInPrevRounds = Object.keys(this.currentGroupA[1].stats) //we dont count lose in current round
+          .reduce((prev, current) => prev + (this.currentGroupA[1].stats[current].result === MATCH_RESULT.LOSE && current != this.currentRoundIndex ? 1 : 0), 0);
+        if (firstCompetitorLosesCountInPrevRoounds === 0 && secondCompetitorLosesCountInPrevRounds === 0) {
+          exitToFinal = true;
+        }
+        console.log('LosesCountInPrevRoounds', firstCompetitorLosesCountInPrevRoounds, secondCompetitorLosesCountInPrevRounds);
+      };
+
+      if (exitToFinal) { // to prevent copy of competitor in next iteration
+        if (!semifinalist && !finalist) {
+          if (isCompetitorWinner) {
+            finalist = competitor;
+            semifinalist = this.currentGroupA[1];
+          }
+          if (isCompetitorLoser) {
+            semifinalist = competitor; 
+            finalist = this.currentGroupA[1];
+          }
+        }
+        return;
+      }
+
+      if (index === 0 && this.currentGroupB.length === 0 && currentGroupALength === 2 ) { //&& !semifinalist && !finalist
+        //can be SUPERFINAL, && !semifinalist && !finalist is unnecessary
+        const firstCompetitorLosesCountInAllRoounds = Object.values(competitor.stats)
+          .reduce((prev, current) => prev + (current.result === MATCH_RESULT.LOSE ? 1 : 0), 0);
+        const secondCompetitorLosesCountInAllRounds = Object.values(this.currentGroupA[1].stats)
+          .reduce((prev, current) => prev + (current.result === MATCH_RESULT.LOSE ? 1 : 0), 0); 
+        console.log('CompetitorLosesCountInAllRoounds', firstCompetitorLosesCountInAllRoounds, secondCompetitorLosesCountInAllRounds)
+        if (firstCompetitorLosesCountInAllRoounds === 1 && secondCompetitorLosesCountInAllRounds === 1) { // means superfinal
+          isSuperFinal = true;
+          if (isCompetitorWinner) {
+            const updatedWinner = _.cloneDeep(competitor);
+            _.set(updatedWinner.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
+            newRoundGroupA.push(updatedWinner);
+            const updatedLoser = _.cloneDeep(this.currentGroupA[1]);
+            _.set(updatedLoser.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
+            newRoundGroupA.push(updatedLoser);
+          } 
+          if (isCompetitorLoser) {
+            const updatedLoser = _.cloneDeep(competitor);
+            _.set(updatedLoser.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
+            newRoundGroupA.push(updatedLoser);
+            const updatedWinner = _.cloneDeep(this.currentGroupA[1]);
+            _.set(updatedWinner.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
+            newRoundGroupA.unshift(updatedWinner);
+          }
+          return;
+        }
+      }
+      if (isSuperFinal) { // all competitors already calculated above, prevent copy of loser competitor in next iteration
+        return;
+      }
+
+      //IN THE FINAL IN GROUP A CAN BE A COMPETITOR WITH LOSSES, WE NEED TO COUNT LOSSES
+      const numberOfLoses = Object.values(competitor.stats).reduce((prev, current) => prev + (current.result === MATCH_RESULT.LOSE ? 1 : 0), 0);
+      console.log(competitor.lastName, numberOfLoses)
+
+      // 2 LOSES IN A => COMPETITION IS FINISHING
       if (numberOfLoses === 2) {
         finishedGroup.unshift( _.cloneDeep(competitor));
         return;
@@ -431,20 +344,20 @@ class TournamentStore {
        // NO PAIR, MOVES TO TOP OF HIS GROUP IN NEXT ROUND
       if (isLastPairIncomplete) {
         const updateCompetitor = _.cloneDeep(competitor);
-        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE)
         newRoundGroupA.unshift(updateCompetitor);
         return;
       }
       if (isCompetitorWinner) {
         const updateCompetitor = _.cloneDeep(competitor);
-        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE)
         newRoundGroupA.push(updateCompetitor)
       }
 
       // COMPETITOR MOVES TO GROUP B
       if (isCompetitorLoser) {
         const updateCompetitor = _.cloneDeep(competitor);
-        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE)
         newRoundGroupB.push(updateCompetitor)
       }
     });
@@ -457,43 +370,54 @@ class TournamentStore {
       // NO PAIR, MOVES TO TOP OF HIS GROUP IN NEXT ROUND
       if (isLastPairIncomplete) {
         const updateCompetitor = _.cloneDeep(competitor);
-        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE)
         newRoundGroupB.unshift(updateCompetitor);
         return;
       }
       if (isCompetitorWinner) {
         const updateCompetitor = _.cloneDeep(competitor);
-        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], 'idle')
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
         newRoundGroupB.push(updateCompetitor)
       }
       // COMPETITOR FINISHING AND MOVED TO RESULT
       if (isCompetitorLoser) {
-        finishedGroup.push(_.cloneDeep(competitor));
+        finishedGroup.unshift(_.cloneDeep(competitor)); 
       }
     });
 
-    //COMPETITOR FROM B MOVES TO FINAL
-    if (newRoundGroupB.length === 1) {
-      newRoundGroupA.push(_.cloneDeep(newRoundGroupB[0]));
-      newRoundGroupB = [];
+    if (semifinalist) {
+      if (newRoundGroupB.length === 1 || newRoundGroupB.length == 0) {
+        const updateCompetitor = _.cloneDeep(semifinalist);
+        _.set(updateCompetitor.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
+        newRoundGroupB.unshift(updateCompetitor);
+        semifinalist = null;
+      }
     } 
+
+    if (finalist) {
+      if (!semifinalist && newRoundGroupB.length === 1) {
+        const updatedFinalist = _.cloneDeep(finalist);
+        _.set(updatedFinalist.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
+        newRoundGroupA.push(updatedFinalist);
+        const updatedSemifinalist = _.cloneDeep(newRoundGroupB[0]);
+        _.set(updatedSemifinalist.stats, [nextRoundIndex, 'result'], MATCH_RESULT.IDLE);
+        newRoundGroupA.push(updatedSemifinalist);
+        finalist = null;
+        newRoundGroupB = [];
+      }
+    }
 
     //END OF CATEGORY
     if (newRoundGroupA.length === 1 && newRoundGroupB.length === 0) {
-      this.setTableStatus(this.currentTableIndex, 'finished');
-      finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));
-      this.logRoundResults(finishedGroup);
+      this.setTournamentCategoryStatus(CATEGORY_STATE.FINISHED);
+      this.setTableStatus(this.currentTableIndex, TABLE_STATE.FINISHED);
+      finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));       
+      this.logRoundResults(finishedGroup);                       
       return;
-
     }
 
-    //  console.log('nextRound', nextRoundIndex)
-    //  console.log('groupA', toJS(newRoundGroupA))
-    //  console.log('groupB',  toJS(newRoundGroupB))
-
-    
      this.logRoundResults(finishedGroup);
-     this.currentTable.rounds[nextRoundIndex] = { groupA: newRoundGroupA, groupB: newRoundGroupB };
+     this.currentTable.rounds[nextRoundIndex] = { groupA: newRoundGroupA, groupB: newRoundGroupB, finalist: finalist, semifinalist: semifinalist };
      this.currentTable.selectedRound = nextRoundIndex;
   }
 
@@ -512,19 +436,25 @@ class TournamentStore {
       ? selectedCompetitorIndex + 1
       : selectedCompetitorIndex - 1;
     
-    currentGroup[selectedCompetitorIndex].stats[this.currentRoundIndex].result = 'win';
+    currentGroup[selectedCompetitorIndex].stats[this.currentRoundIndex].result = MATCH_RESULT.WIN;
 
     if (pairedCompetitorIndex < currentGroup.length) {
-      currentGroup[pairedCompetitorIndex].stats[this.currentRoundIndex].result = 'lose';
+      currentGroup[pairedCompetitorIndex].stats[this.currentRoundIndex].result = MATCH_RESULT.LOSE;
     }
   }
   
 
   logRoundResults = (finishedGroup) => {
-    if (!this.results[this.currentTable.category]) {
-      this.results[this.currentTable.category] = [];
+    const competitorsCount = this.currentTable.rounds[0].groupA.length;
+    if (!this.results[this.currentTable.category]) { //means category id;
+      this.results[this.currentTable.category] = new Array(competitorsCount).fill(null);
     } 
-    this.results[this.currentTable.category] = [...finishedGroup, ...this.results[this.currentTable.category]]
+    const results = this.results[this.currentTable.category];
+    let firstCompetitorIndex = results.findIndex((competitor) => !!competitor);
+    if (firstCompetitorIndex === -1) { firstCompetitorIndex = results.length };
+    results.splice(firstCompetitorIndex - finishedGroup.length, finishedGroup.length, ...finishedGroup);
+
+    this.results[this.currentTable.category] = results.map((el) => el);
 
     console.log(toJS(this.results))
   }
@@ -543,13 +473,18 @@ class TournamentStore {
       },
       ...this.postponedCategoriesProgress,
     };
-    this.setTableStatus(this.currentTableIndex, 'idle');
+    this.setTableStatus(this.currentTableIndex, TABLE_STATE.IDLE);
   };
 
   startPostponedCategories = (currentTableIndex) => {
     const categoryHistory = this.postponedCategoriesProgress[this.currentTable.category];
     this.tables[currentTableIndex] = _.cloneDeep(categoryHistory);
+    this.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
     delete this.postponedCategoriesProgress[this.currentTable.category];
+  }
+
+  removeResults = () => {
+    this.results = {};
   }
 
   get
@@ -559,7 +494,7 @@ class TournamentStore {
   
   get
   currentRoundIndex() {
-    return this.currentTable.selectedRound;
+    return +this.currentTable.selectedRound;
   }
 
   get
@@ -588,10 +523,59 @@ class TournamentStore {
   }
 
 
+  get
+  currentFinalist() {
+    return this.currentRound.finalist || null; // can be undefined for prerounds so need fallback
+  }
+
+  get
+  currentSemiFinalist() {
+    return this.currentRound.semifinalist || null; // can be undefined for prerounds so need fallback
+  }
+
+  get
+  postponedCategoriesIdsList() {
+    return Object.keys(this.postponedCategoriesProgress)
+            //  .filter((categoryId => this.newTournamentCategories[categoryId].state === CATEGORY_STATE.PAUSED))
+  }
+
+  get
+  idleCategoriesIdsList() {
+    return Object.keys(this.newTournamentCategories)
+      .filter((categoryId => this.newTournamentCategories[categoryId].state === CATEGORY_STATE.IDLE))
+  }
+
+  selectedCategoryCompetitorsCount(categoryId) {
+    return this.competitorsList.reduce((prev, { tournamentCategoryIds }) => prev + (tournamentCategoryIds.includes(categoryId) ? 1 : 0), 0);
+  }
+
+  get
+  resultForPDF() {
+    const dateObject = fromUnixTime(this.tournamentDate / 1000);
+    const formattedDate = format(dateObject, 'dd-MM-yyyy');
+    const categoriesResults = [];
+    Object.keys(this.results).map(categoryId => {
+      const category = this.newTournamentCategories[categoryId];
+      if (category.state === CATEGORY_STATE.FINISHED) {
+        categoriesResults.push({
+          name: generateTournamentCategoryTitle(getIntl(), category.config),
+          results: this.results[categoryId].map((athlete) => `${athlete.lastName} ${athlete.firstName}`)
+        })
+      }
+    })
+    return {
+      title: this.tournamentName,
+      date: formattedDate,
+      categoriesResults,
+    }
+  }
+
+
+
 }
 
 export const tournamentStore = new TournamentStore();
 
 autorun(() => {
-  console.log("Energy level:", tournamentStore)
+  //console.log("Energy level:", tournamentStore)
 })

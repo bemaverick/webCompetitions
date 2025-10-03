@@ -4,49 +4,89 @@ import { HashRouter, Routes, Route } from "react-router-dom"
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { AuthProvider } from "../contexts/AuthContext"
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ConfirmProvider, useConfirm } from "material-ui-confirm";
 import PrivateRoute from "./PrivateRoute"
 import Tournament from "./Tournament"
 import TournamentSettings from "./TournamentSettings"
 import TournamentCategories from "./TournamentCategories"
 import TournamentCompetitors from "./TournamentCompetitors"
 import TournamentResults from "./TournamentResults";
+import English from "../locales/en.json";
+import Ukrainian from "../locales/uk.json";
 
 
+import { IntlProvider, createIntl, createIntlCache } from 'react-intl';
 import SignUp from "./SignUp"
 import SignIn from "./SignIn"
 import InitialPage from "./InitialPage"
 import Root from "./root"
+const theme = createTheme();
+
+
+
+
+const locale = navigator.language;
+let lang;
+if (locale.includes("uk")) {
+   lang = Ukrainian;
+} else {
+  lang = English;
+}
+
+
+// It's recommended to create a cache for better performance
+const cache = createIntlCache();
+// Create the intl object
+const intl = createIntl(
+  {
+    locale,
+    messages: lang,
+  },
+  cache
+);
+
+export const getIntl = () => intl;
+console.log('createIntlCache', intl, intl.formatMessage({ id: 'common.hand.left'}))
+
 
 //Browser router was changed to HashRouter
 //because GitHub pages doesn't support browser history
 
 function App() {
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <HashRouter>
-        <AuthProvider>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <Root />
-                </PrivateRoute>
-              }
-            >
-              {/* <Route index element={<InitialPage />} /> */}
-              <Route index element={<Tournament />} />
-              <Route index path="/tournamentSettings" element={<TournamentSettings />} />
-              <Route index path="/tournamentCategories" element={<TournamentCategories />} />
-              <Route index path="/tournamentCompetitors" element={<TournamentCompetitors />} />
-              <Route path="/tournamentResults" element={<TournamentResults />} />
-            </Route>
-            <Route path="/signup" element={<SignUp/>} />
-            <Route path="/signin" element={<SignIn/>} />
-          </Routes>
-        </AuthProvider>
-      </HashRouter>
-    </LocalizationProvider>
+    <IntlProvider locale={locale} messages={Ukrainian}>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <ThemeProvider theme={theme}>
+          <ConfirmProvider>
+            <HashRouter>
+              <AuthProvider>
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <PrivateRoute>
+                        <Root />
+                      </PrivateRoute>
+                    }
+                  >
+                    {/* <Route index element={<InitialPage />} /> */}
+                    <Route index element={<Tournament />} />
+                    <Route index path="/tournamentSettings" element={<TournamentSettings />} />
+                    <Route index path="/tournamentCategories" element={<TournamentCategories />} />
+                    <Route index path="/tournamentParticipants" element={<TournamentCompetitors />} />
+                    <Route path="/tournamentResults" element={<TournamentResults />} />
+                  </Route>
+                  <Route path="/signup" element={<SignUp/>} />
+                  <Route path="/signin" element={<SignIn/>} />
+                </Routes>
+              </AuthProvider>
+            </HashRouter>
+          </ConfirmProvider>
+        </ThemeProvider>
+      </LocalizationProvider>
+    </IntlProvider>
+
   )
 }
 

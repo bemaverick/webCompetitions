@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { Grid, Typography, Divider } from '@mui/material';
+import { Grid, Typography, Divider, Chip } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
+import { useIntl } from 'react-intl';
 
 
 const getMedalEmoji = (position) => {
@@ -17,6 +18,7 @@ const getMedalEmoji = (position) => {
 
 export const CompetitorRow = (props) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const intl = useIntl();
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -39,27 +41,25 @@ export const CompetitorRow = (props) => {
   const { columnConfig = {
     firstName: {
       visible: true,
-      flex: 2.5
+      flex: 1.5
     },
     lastName: {
       visible: true,
-      flex: 2.5
+      flex: 2
     },
     weight: {
       visible: true,
-      flex: 0.5
+      flex: 1
     },
     present: {
       visible: true,
-      flex: 1.5
+      flex: 2.5
     },
     categories: {
       visible: true,
       flex: 5
     },
   } } = props;
-  console.log(props.present)
-
 
   return (
     <>
@@ -72,14 +72,14 @@ export const CompetitorRow = (props) => {
           'aria-labelledby': 'basic-button',
         }}
       >
-        <MenuItem onClick={onPressEdit}>Редагувати</MenuItem>
-        <MenuItem onClick={onPressDelete}>Видалити</MenuItem>
+        <MenuItem onClick={onPressEdit}>{intl.formatMessage({ id: 'buttons.edit'})}</MenuItem>
+        <MenuItem onClick={onPressDelete}>{intl.formatMessage({ id: 'buttons.delete'})}</MenuItem>
       </Menu>
       <Grid container columnSpacing={1} sx={{  pt:1, pb: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)'  }}>
         {columnConfig.firstName?.visible && (
           <Grid item xs={columnConfig.firstName.flex} sx={{ }}> 
             <Typography variant="body1">
-              {withEmoji && getMedalEmoji(props.position)}{props.position}. {props.firstName}
+              {withEmoji && getMedalEmoji(props.position)}{props.position}. {`  ${props.firstName}`}
             </Typography>
           </Grid>
         )}
@@ -100,7 +100,7 @@ export const CompetitorRow = (props) => {
         {columnConfig.present?.visible && (
           <Grid item xs={columnConfig.present.flex } sx={{ }}> 
             <Typography textAlign={'center'} variant="body1">
-              {props.present ? "Присутній" : "Попередня заявка"}
+              {intl.formatMessage({ id: props.present ? 'common.confirmed' : 'common.unConfirmed'})}
             </Typography>
           </Grid>
         )}
