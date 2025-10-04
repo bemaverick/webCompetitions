@@ -29,7 +29,8 @@ const theme = createTheme();
 const locale = navigator.language;
 let lang;
 if (locale.includes("uk")) {
-   lang = Ukrainian;
+   //lang = Ukrainian;
+   lang = English
 } else {
   lang = English;
 }
@@ -47,15 +48,13 @@ const intl = createIntl(
 );
 
 export const getIntl = () => intl;
-console.log('createIntlCache', intl, intl.formatMessage({ id: 'common.hand.left'}))
-
 
 //Browser router was changed to HashRouter
 //because GitHub pages doesn't support browser history
 
 function App() {
   return (
-    <IntlProvider locale={locale} messages={Ukrainian}>
+    <IntlProvider locale={locale} messages={lang}>
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <ThemeProvider theme={theme}>
           <ConfirmProvider>

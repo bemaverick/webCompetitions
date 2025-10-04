@@ -46,6 +46,3 @@ class SystemStore {
 
 export const systemStore = new SystemStore();
 
-autorun(() => {
-  //console.log("Energy level:", tournamentStore)
-})

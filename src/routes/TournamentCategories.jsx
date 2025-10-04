@@ -99,15 +99,16 @@ export default observer(function TournamentCategories() {
               dense={true}
             >
               <ListSubheader
-                disableGutters
-                sx={{ display: 'flex', pt: 0, backgroundColor: 'transparent', justifyContent: 'center', borderBottom: '2px solid #ddd', }}
+                disableSticky
+                sx={{ display: 'flex', pt: 0, justifyContent: 'center', borderBottom: '2px solid #ddd', }}
               >
                 <Button
-                  sx={{ mt: 2, mb: 2 }}
+                  sx={{ mt: 2, mb: 2, mx: 4 }}
                   onClick={() => setCreatingCategoryModal(true)}
                   color="primary"
-                  size="small"
+                  size="medium"
                   variant="contained"
+                  fullWidth
                 >
                    {intl.formatMessage({ id: 'button.add.tournamentCategory' })}
                 </Button>
@@ -357,7 +358,7 @@ const ModalForCategories = observer((props) => {
     if (validationErrors && !_.isEmpty(selectedWeightCategories)) {
       showValidationErrors(false);
     }
-  }, selectedWeightCategories, validationErrors);
+  }, [selectedWeightCategories, validationErrors]);
 
   const selectWeightCategory = (weightCategory) => {
 
@@ -372,7 +373,6 @@ const ModalForCategories = observer((props) => {
   }
   
   const onSave = () => {
-    console.log('selectedWeightCategories', selectedWeightCategories)
     if (_.isEmpty(selectedWeightCategories) || (!checkboxes.left && !checkboxes.right) || (!checkboxes.men && !checkboxes.women)) {
       showValidationErrors(true);
       return;
@@ -398,8 +398,6 @@ const ModalForCategories = observer((props) => {
       const handsNumber = left && right ? 2 : 1;
       const genderNumber = men && women ? 2 : 1;
       const multiplier = handsNumber * genderNumber;
-
-      console.log(multiplier, Object.values(checkboxes), checkboxes);
       totalCount = weightCategoriesNumber * multiplier;
     }
     setNumberOfCategories(totalCount);

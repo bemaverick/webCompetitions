@@ -74,16 +74,26 @@ export default observer(function TournamentCompetitors() {
   const location = useLocation();
   const navigate = useNavigate();
   const intl = useIntl();
-  console.log('tournamentCategoryId', location)
+
+  // React.useEffect(() => {
+  //   const res = []
+  //   tournamentStore.competitorsList.map((comp) => {
+  //     res.push({
+  //       ...comp,
+  //       tournamentCategoryIds: [],
+  //       present: true,
+  //     })
+  //   });
+  //   console.log('competitors', JSON.stringify(res), res);
+
+  // }, []);
+
   const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
 
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [validationErrors, showValidationErrors] = React.useState(false);
-
-  // const [firstName, setFirstName] = React.useState('');
-  // const [lastName, setLastName] = React.useState('');
-  const [weight, setWeight] = React.useState('105');
+  const [weight, setWeight] = React.useState('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(location.state?.tournamentCategoryId ? [location.state.tournamentCategoryId] : []);
   const [editModalVisble, setEditModalVisble] = React.useState(false);
@@ -106,7 +116,6 @@ export default observer(function TournamentCompetitors() {
     const {
       target: { value },
     } = event;
-    console.log('handle change', value);
 
     const containOnlyIdleCAtegories = value.every(
       (categoryId) => tournamentStore.newTournamentCategories[categoryId].state === CATEGORY_STATE.IDLE
@@ -329,8 +338,6 @@ export default observer(function TournamentCompetitors() {
               </FormControl>
             </Grid>
           </Grid>
-
-
           <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
             {сompetitorsList.map((competitor, index) => (
               <CompetitorRow

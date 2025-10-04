@@ -34,6 +34,8 @@ import { fromUnixTime, format } from 'date-fns';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { firestoreDB } from "../firebase";
 import { CATEGORY_STATE } from "../constants/tournamenConfig";
+import { wait } from "../utils/common";
+import { Copyright } from "./SignIn";
 
 
 export async function action() {
@@ -97,7 +99,7 @@ const saveResults = async (results) => {
     const tournamentRef = doc(tournamentsRef);
     const tournament = {
       tournament: {
-        name: tournamentStore.tournamentName,
+        name: tournamentStore.tournamentName || 'Unnamed Tournament', // TODO crutch
         date: formattedDate,
         tablesCount: tournamentStore.tablesCount,
         weightUnit: tournamentStore.weightUnit.value,
@@ -145,19 +147,34 @@ export default observer(function Root() {
   const competitionInProgress = systemStore.appState === 'competitionInProgress';
 
   const onPressFinish = async () => {
+    const tournamentIsFinished = Object.values(tournamentStore.newTournamentCategories)
+      .every(({ state }) => state === CATEGORY_STATE.FINISHED);
     if (competitionInProgress) { 
       try {
         await confirm({
-          // title: "Ви впевнені що хочете завершити змагання?",
-          // description: "Поточний прогрес буде втрачено, результат змагань буде збережено",
-          title: "Ви впевнені, що хочете завершити турнір?",
-          description: "Ви не зможете продовжити змагання, але поточний результат буде збережений.",
-          confirmationText: intl.formatMessage({ id: 'common.yes.change' }),
+          title: intl.formatMessage({ id: 'warning.tournament.finish' }),
+          description: intl.formatMessage({ id: 'hint.tournament.finish' }),
+          confirmationText: intl.formatMessage({ id: 'buttons.confirm.finishTournament' }),
           cancellationText: intl.formatMessage({ id: 'common.no' }),
-        });
-
+          confirmationButtonProps: {
+            color: 'error'
+          }
+        }); 
+        if (!tournamentIsFinished) {
+          await wait(500);
+          await confirm({
+            title: intl.formatMessage({ id: "warning.tournament.unfinishedCategories" }),
+            description: intl.formatMessage({ id: 'hint.tournament.unfinishedCategories' }),
+            confirmationText: intl.formatMessage({ id: 'buttons.confirm.finishTournament' }),
+            cancellationText: intl.formatMessage({ id: 'common.no' }),
+            confirmationButtonProps: {
+              color: 'error'
+            }
+          }); 
+        }
         await saveResults(tournamentStore.results);
         systemStore.setAppState('competitionsList');
+        tournamentStore.resetStore();
         navigate('/');
       } catch (error) {
         conole.log('cancel', error);
@@ -258,10 +275,11 @@ export default observer(function Root() {
           >
             {intl.formatMessage({ id: competitionInProgress ? 'button.tournament.finish' : 'button.account.logout' })}
           </Button>
-        <Box sx={{ px: 2 }}>
-          <Typography variant="body1" color={'grey'} noWrap component="div">
+        <Box sx={{ px: 2, py: 1 }}>
+          <Copyright />
+          {/* <Typography variant="body1" color={'grey'} noWrap component="div">
             v. 0.2
-          </Typography>
+          </Typography> */}
         </Box>
 
         {/* <Divider />

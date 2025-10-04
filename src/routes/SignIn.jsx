@@ -18,12 +18,12 @@ import GoogleIcon from '@mui/icons-material/Google'; //
 
 import { useAuth } from '../contexts/AuthContext';
 
-function Copyright(props) {
+export function Copyright(props) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
       {'Copyright © '}
       <Link color="inherit" href="https://mui.com/">
-        Your Website
+        Arm-Grid
       </Link>{' '}
       {new Date().getFullYear()}
       {'.'}
@@ -163,7 +163,7 @@ export default function SignInSide() {
                 </Link>
               </Grid>
             </Grid> */}
-            {/* <Copyright sx={{ mt: 5 }} /> */}
+            <Copyright sx={{ mt: 5 }} />
           </Box>
         </Box>
       </Grid>

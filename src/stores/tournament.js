@@ -60,7 +60,7 @@ class TournamentStore {
 
 //tournamentCategories = {};
 
-  newTournamentCategories = {}; // should be renamed
+  newTournamentCategories = {}; // TODO should be renamed
 
   postponedCategoriesProgress = {}; // when user presses pause category progress is saving here
 
@@ -487,6 +487,25 @@ class TournamentStore {
     this.results = {};
   }
 
+  resetStore = () => {
+    this.weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
+    this.tournamentName = '';
+    this.tournamentDate = Date.now();
+    this.tablesCount = 3;
+    this.currentTableIndex = 0;
+    this.tables = {
+      0: TABLE_INITIAL_STATE,
+      1: TABLE_INITIAL_STATE,
+      2: TABLE_INITIAL_STATE,
+    };
+    this.weightCategories = WEIGHT_CATEGORIES_DEFAULT;
+    this.classificationCategories = CLASSIFICATION_LIST_DEFAULT;
+    this.newTournamentCategories = {};
+    this.postponedCategoriesProgress = {};
+    this.competitorsList = [];
+    this.results = {};
+  }
+
   get
   currentTable() {
     return this.tables[this.currentTableIndex];
@@ -576,6 +595,6 @@ class TournamentStore {
 
 export const tournamentStore = new TournamentStore();
 
-autorun(() => {
-  //console.log("Energy level:", tournamentStore)
-})
+// autorun(() => {
+//   //console.log("Energy level:", tournamentStore)
+// })
