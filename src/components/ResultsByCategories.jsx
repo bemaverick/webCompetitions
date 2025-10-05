@@ -96,7 +96,10 @@ const CategoryDetailsView = observer((props) => {
   const intl = useIntl();
   const results = props.categoryResults?.categoryResults || [];
   const currentTournamentCategory = props.categoryResults?.category;
-  console.log('CategoryDetailsView', props.categoryResults)
+  const onClickGenerate = () => {
+    props.generateResultPDF();
+  }
+  // console.log('CategoryDetailsView', props.categoryResults)
 
 
   // const categoryCompetitorsList = React.useMemo(() => {
@@ -114,7 +117,7 @@ const CategoryDetailsView = observer((props) => {
               size='noraml'
               fullWidth
               variant='contained'
-              onClick={props.generateResultPDF}
+              onClick={onClickGenerate}
             >
               {intl.formatMessage({ id: 'button.create.pdf' })}
             </Button>

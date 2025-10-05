@@ -39,6 +39,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { auth } from '../contexts/AuthContext';
 import { ResultsByCategories } from '../components/ResultsByCategories';
 import { generateResultsPdf } from '../lib/pdf';
+import { analytics } from '../services/analytics';
 
 function TabPanel(props) {
   const intl = useIntl();
@@ -49,6 +50,17 @@ function TabPanel(props) {
       snapshotListenOptions: { includeMetadataChanges: false },
     }
   )
+
+  React.useEffect(() => {
+    if (error) {
+      try {
+        analytics.logEvent('fetch_tournament_categories_results_errors', { errors: JSON.stringify( error)});
+        
+      } catch (error) {
+      }
+    }
+  }, [error])
+  
   const results = [];
   const categoriesResults = [];
 
@@ -80,11 +92,14 @@ function TabPanel(props) {
       date: tournament.tournament.date,
       categoriesResults: categoriesResults,
     }
-    console.log('pdfResults', pdfResults);
+
     return (
       <ResultsByCategories
         results={results}
-        onClickGenerate={() => generateResultsPdf(pdfResults)}
+        onClickGenerate={() => {
+          analytics.logEvent('on_generate_pdf_past');
+          generateResultsPdf(pdfResults);
+        }}
       />
     )
   }
@@ -114,6 +129,16 @@ const TournamentList = observer(() => {
     }
   )
 
+  React.useEffect(() => {
+    if (error) {
+      try {
+        analytics.logEvent('fetch_tournaments_list_errors', { errors: JSON.stringify( error)});
+        
+      } catch (error) {
+      }
+    }
+  }, [error])
+
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -124,6 +149,11 @@ const TournamentList = observer(() => {
         <LinearProgress />
       </Box>
     )
+  }
+
+  const goToTournamentCreation = () => {
+    systemStore.setAppState('competitionInProgress');
+    analytics.logEvent('create_tournament');
   }
 
   if (!loading && !tournamentsSnapshot?.docs?.length) {
@@ -137,7 +167,7 @@ const TournamentList = observer(() => {
           </Typography>
           <Button
             sx={{ mt: 2, mb: 3, }}
-            onClick={() => systemStore.setAppState('competitionInProgress')} // TODO move to constants
+            onClick={goToTournamentCreation} // TODO move to constants
             variant='outlined'
           >
             {intl.formatMessage({ id: 'button.create.new.tournament' })}
@@ -220,7 +250,7 @@ const TableContent = observer((props) => {
   const startMatches = () => {
     if (currentTable.category) {
       tournamentStore.setTableStatus(currentTableIndex, TABLE_STATE.IN_PROGRESS);
-      tournamentStore.setTournamentCategoryStatus(TABLE_STATE.IN_PROGRESS);
+      tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
     }
   }
 

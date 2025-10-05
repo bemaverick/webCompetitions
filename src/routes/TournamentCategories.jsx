@@ -41,6 +41,7 @@ import { useIntl } from 'react-intl';
 import { CATEGORY_OPEN_ID, CATEGORY_STATE } from '../constants/tournamenConfig';
 import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
 import { systemStore } from '../stores/systemStore';
+import { analytics } from '../services/analytics';
 
 
 const Transition = React.forwardRef(function Transition(
@@ -295,9 +296,12 @@ const CategoryDetailsView = observer((props) => {
             color='error'
             size='small'
             variant='outlined'
-            onClick={() => setRemovalConfirmationModal(true)}
-            >
-              {intl.formatMessage({ id: 'buttons.remove.category' })}
+            onClick={() => {
+              setRemovalConfirmationModal(true);
+              analytics.logEvent('on_remove_category');
+            }}
+          >
+            {intl.formatMessage({ id: 'buttons.remove.category' })}
           </Button>
         </Box>
       </Stack>

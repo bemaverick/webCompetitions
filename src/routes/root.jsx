@@ -36,6 +36,8 @@ import { firestoreDB } from "../firebase";
 import { CATEGORY_STATE } from "../constants/tournamenConfig";
 import { wait } from "../utils/common";
 import { Copyright } from "./SignIn";
+import { analytics } from "../services/analytics";
+import { APP_VERSION } from "../constants/config";
 
 
 export async function action() {
@@ -131,7 +133,10 @@ const saveResults = async (results) => {
         })
       }
     }
+    analytics.logEvent('save_reseults_success');
+    
   } catch (error) {
+    analytics.logEvent('save_reseults_errors');
     console.log('error', error)
   }
 };
@@ -146,7 +151,16 @@ export default observer(function Root() {
   const inCompetitionsListMode = systemStore.appState === 'competitionsList';
   const competitionInProgress = systemStore.appState === 'competitionInProgress';
 
+  React.useEffect(() => {
+    analytics.setUser(auth.user.uid);
+    analytics.setUserProps({
+      locale: navigator.language,
+    });
+    analytics.logEvent('session_launched');
+  }, []);
+
   const onPressFinish = async () => {
+    analytics.logEvent('on_finish_tournament');
     const tournamentIsFinished = Object.values(tournamentStore.newTournamentCategories)
       .every(({ state }) => state === CATEGORY_STATE.FINISHED);
     if (competitionInProgress) { 
@@ -181,10 +195,15 @@ export default observer(function Root() {
       }
     }
     if (inCompetitionsListMode) {
+      analytics.logEvent('logout');
       auth.logout();
     }
   }
 
+  const goToTournamentCreation = () => {
+    systemStore.setAppState('competitionInProgress');
+    analytics.logEvent('create_tournament');
+  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -228,6 +247,9 @@ export default observer(function Root() {
           <Typography variant="h5" noWrap component="div">
             {intl.formatMessage({ id: 'app.name' })}
           </Typography>
+          <Typography variant="caption" color='GrayText' gutterBottom sx={{ display: 'block' }}>
+            v{APP_VERSION}
+          </Typography>
 
         </Toolbar>
         <Divider />
@@ -242,7 +264,7 @@ export default observer(function Root() {
                   <ListItemText primary={intl.formatMessage({ id: "common.prevCompetitons" })} />
                 </ListItemButton>
               </ListItem>
-              <ListItem onClick={() => systemStore.setAppState('competitionInProgress')} disablePadding>
+              <ListItem onClick={goToTournamentCreation} disablePadding>
                 <ListItemButton selected={false}>
                   <ListItemIcon>
                     <EmojiEventsIcon />

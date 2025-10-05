@@ -36,6 +36,7 @@ import _ from "lodash"
 import { useIntl } from 'react-intl';
 import { CATEGORY_OPEN_ID, TABLE_STATE, TABLES_SELECT_CONFIG, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_CATEGORIES_DEFAULT_LBS, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
 import { systemStore } from '../stores/systemStore';
+import { analytics } from '../services/analytics';
 
 
 const ListItem = styled('li')(({ theme }) => ({
@@ -46,7 +47,6 @@ const ListItem = styled('li')(({ theme }) => ({
 // add validaton to prevent adding the same categories and classifications
 
 export default observer(function TournamentSettings() {
-  const auth = useAuth();
   
   const intl = useIntl();
   const [tournamentName, setTournamentName] = React.useState(tournamentStore.tournamentName);
@@ -57,6 +57,7 @@ export default observer(function TournamentSettings() {
   const [weightCategories, setWeightCategories] = React.useState(tournamentStore.weightCategories);
   const [classification, setClassification] = React.useState('');
   const [classificationCategories, setClassificationCategories] = React.useState(tournamentStore.classificationCategories);
+  const [validationErrors, showValidationsErrors] = React.useState(false);
   const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${weightUnit.value}`});
 
   const onAddWeightCategory = React.useCallback((ev) => {
@@ -68,6 +69,7 @@ export default observer(function TournamentSettings() {
         setWeightCategory('');
       }
     }
+    analytics.logEvent('on_add_weight_category');
   }, [weightCategory, weightCategories]);
 
   const onAddClassification = React.useCallback((ev) => {
@@ -79,20 +81,28 @@ export default observer(function TournamentSettings() {
         setClassification('');
       }
     }
+    analytics.logEvent('on_add_classification');
   }, [classification, classificationCategories]);
 
   const onDeleteWeightCategory = React.useCallback((categoryId) => {
     const updatedCategories = weightCategories.filter(category => category.id !== categoryId);
     setWeightCategories(updatedCategories);
+    analytics.logEvent('on_delete_weight_category');
   }, [weightCategories]);
 
   const onDeleteClassification = React.useCallback((classificationId) => {
     const updatedClassifications = classificationCategories.filter(classification => classification.id !== classificationId);
     setClassificationCategories(updatedClassifications);
+    analytics.logEvent('on_delete_classification');
   }, [classificationCategories]);
 
   const onSave = async () => {
     //auth.logout();
+    if (!tournamentName) {
+      showValidationsErrors(true);
+      return;
+    }
+    showValidationsErrors(false);
     tournamentStore.setTournamentBasicSettings({ tournamentName, tournamentDate, tablesCount, weightCategories, classificationCategories, weightUnit });
   }
 
@@ -107,6 +117,7 @@ export default observer(function TournamentSettings() {
     if (_.isEqual(defaultCategoriesList, weightCategories)) {
       setWeightCategories(unit === WEIGHT_UNIT_KG ? WEIGHT_CATEGORIES_DEFAULT : WEIGHT_CATEGORIES_DEFAULT_LBS);
     }
+    analytics.logEvent('on_change_weight_unit');
   }
 
   const changeNumberOfTables = (event) => {
@@ -122,7 +133,7 @@ export default observer(function TournamentSettings() {
     } else {
       setTablesCount(numberOfTables);
     }
-    console.log('lastActiveTableIndex', lastActiveTableIndex);
+    analytics.logEvent('on_change_table_count');
   }
 
   return (
@@ -141,8 +152,13 @@ export default observer(function TournamentSettings() {
                   onChange={(event) => {
                     setTournamentName(event.target.value);
                   }}
-                  helperText={intl.formatMessage({ id: 'placeholder.tournamentName' })}
+                  helperText={
+                    (!tournamentName && validationErrors) ? intl.formatMessage({ id: 'validation.commong.required'})
+                    : intl.formatMessage({ id: 'placeholder.tournamentName' })
+                  }
                   margin='normal'
+                  error={!tournamentName && validationErrors}
+                
                 />
               </Grid>
               <Grid item xs={6}>
