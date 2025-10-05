@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 export const auth = getAuth(firebaseApp);
 // Create a Google Auth Provider
 const provider = new GoogleAuthProvider();
-console.log('auth', provider, auth)
 
 const AuthContext = React.createContext()
 
@@ -55,7 +54,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setUser(user);
-      console.log(user);
       setLoading(false)
     })
 
