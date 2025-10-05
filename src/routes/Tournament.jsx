@@ -161,7 +161,7 @@ const TournamentList = observer(() => {
       <>
         <Toolbar />
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1,  alignItems: 'center', justifyContent: 'center', pb: 20, border: '1px solid green'}}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1,  alignItems: 'center', justifyContent: 'center', pb: 20, }}>
           <Typography variant="h6" component="h6" sx={{ pb: 4 }}>
             {intl.formatMessage({ id: 'hint.emptyState.noToutnaments' })}
           </Typography>

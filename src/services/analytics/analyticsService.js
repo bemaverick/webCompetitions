@@ -11,7 +11,7 @@ import { firebaseApp } from "../../firebase";
 import { APP_VERSION } from "../../constants/config";
 
 
-const eventPrefix = 'TMP_ARM_GRID_'
+const eventPrefix = 'ARM_GRID_'
 // 🧩 Хелпер-декоратор: додає базові властивості до події
 function withBaseProps(fn) {
   return function (eventName, params = {}) {
