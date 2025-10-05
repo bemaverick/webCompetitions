@@ -112,7 +112,12 @@ const saveResults = async (results) => {
         uid: userId
       },
     }
+    const tournamentsWithoutResults = Object.values(tournamentStore.newTournamentCategories).every(({ state }) => state !== CATEGORY_STATE.FINISHED);
 
+    if (tournamentsWithoutResults) {
+      analytics.logEvent('on_save_empty_tournament');
+      return;
+    }
   
     await setDoc(tournamentRef, tournament);
     const tournamentDocRef = doc(firestoreDB, "armGrid_tournaments", tournamentRef.id);
@@ -133,10 +138,10 @@ const saveResults = async (results) => {
         })
       }
     }
-    analytics.logEvent('save_reseults_success');
+    analytics.logEvent('save_results_success');
     
   } catch (error) {
-    analytics.logEvent('save_reseults_errors');
+    analytics.logEvent('save_results_errors');
     console.log('error', error)
   }
 };
