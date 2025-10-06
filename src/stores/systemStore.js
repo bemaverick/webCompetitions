@@ -28,16 +28,18 @@ class SystemStore {
   snackBar = {
     visible: false,
     message: '',
+    style: 'error',
   };
 
   setAppState(state) {
     this.appState = state;
   }
 
-  displaySnackbar(isVisible, message = '') {
+  displaySnackbar(isVisible, message = '', style = 'error') {
     this.snackBar = {
       visible: isVisible,
       message,
+      style,
     };
   }
 

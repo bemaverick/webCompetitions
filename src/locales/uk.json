@@ -35,6 +35,7 @@
   "common.empty.category": "Категорія пуста",
   "common.signIn": "Авторизація",
   "common.prevCompetitons": "Минулі турніри",
+  "common.changesApplied": "Зміни застосовано",
   "hint.categoryContinueLater": "Зберегти поточний прогрес і розпочати нову категорію. Ви зможете повернутись до цієї категорії в будь-який момент.",
   "hint.participant.confimed": "Учасник з’явився, зважився та підтвердив участь.",
   "hint.tournamentCategories.count.beGenerated": "Буде згенеровано категорій: ",

@@ -35,6 +35,7 @@
   "common.empty.category": "Empty Category",
   "common.signIn": "Sign in",
   "common.prevCompetitons": "Previous Tournaments",
+  "common.changesApplied": "Changes applied",
   "hint.categoryContinueLater": "Save current progress and start a new category. You can return to this category at any time.",
   "hint.participant.confimed": "Indicates that the athlete has appeared, completed weigh-in, and confirmed participation",
   "hint.tournamentCategories.count.beGenerated": "Categories to be generated: ",

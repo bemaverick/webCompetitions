@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "react-router-dom";
 import { getContacts, createContact } from "../contacts";
 import Snackbar from '@mui/material/Snackbar';
-import { Button } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import { auth, useAuth } from '../contexts/AuthContext';
 import * as React from 'react';
 import Box from '@mui/material/Box';
@@ -139,7 +139,6 @@ const saveResults = async (results) => {
       }
     }
     analytics.logEvent('save_results_success');
-    
   } catch (error) {
     analytics.logEvent('save_results_errors');
     console.log('error', error)
@@ -148,6 +147,7 @@ const saveResults = async (results) => {
 export default observer(function Root() {
   const intl = useIntl();
   const auth = useAuth();
+  const [loading, setLoading] = React.useState(false);
   const navigate = useNavigate();
   const confirm = useConfirm();
   const pathname = useLocation().pathname;
@@ -165,11 +165,13 @@ export default observer(function Root() {
   }, []);
 
   const onPressFinish = async () => {
+    if (loading) { return; }
     analytics.logEvent('on_finish_tournament');
-    const tournamentIsFinished = Object.values(tournamentStore.newTournamentCategories)
-      .every(({ state }) => state === CATEGORY_STATE.FINISHED);
+
     if (competitionInProgress) { 
       try {
+        const tournamentIsFinished = Object.values(tournamentStore.newTournamentCategories)
+          .every(({ state }) => state === CATEGORY_STATE.FINISHED);
         await confirm({
           title: intl.formatMessage({ id: 'warning.tournament.finish' }),
           description: intl.formatMessage({ id: 'hint.tournament.finish' }),
@@ -191,12 +193,15 @@ export default observer(function Root() {
             }
           }); 
         }
+        setLoading(true);
         await saveResults(tournamentStore.results);
         systemStore.setAppState('competitionsList');
         tournamentStore.resetStore();
         navigate('/');
       } catch (error) {
         conole.log('cancel', error);
+      } finally {
+        setLoading(false);
       }
     }
     if (inCompetitionsListMode) {
@@ -295,6 +300,7 @@ export default observer(function Root() {
           <Button
             sx={{ height: '40px', m: 2, mb: 0.5 }}
             //size='small'
+            startIcon={loading ? <CircularProgress size={20} /> : null}
             variant='outlined'
             color='error'
             size='small'
@@ -345,10 +351,11 @@ export default observer(function Root() {
       <Snackbar
         ContentProps={{
           sx: {
-            backgroundColor: 'error.main',
+            backgroundColor: colorConfig[systemStore.snackBar.style],
             color: 'white',
           },
         }}
+        key={`snack-${systemStore.snackBar.message}`}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         open={systemStore.snackBar.visible}
         autoHideDuration={6000}
@@ -358,3 +365,9 @@ export default observer(function Root() {
     </Box>
   )
 })
+
+const colorConfig = {
+  success: 'success.main',
+  error: 'error.main',
+  warning: ''
+}

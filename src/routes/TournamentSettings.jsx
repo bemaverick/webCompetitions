@@ -103,6 +103,7 @@ export default observer(function TournamentSettings() {
       return;
     }
     showValidationsErrors(false);
+    systemStore.displaySnackbar(true, 'common.changesApplied', 'success');
     tournamentStore.setTournamentBasicSettings({ tournamentName, tournamentDate, tablesCount, weightCategories, classificationCategories, weightUnit });
   }
 
