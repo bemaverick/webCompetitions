@@ -20,7 +20,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
-import { FormHelperText, Button, Badge, Stack, Modal, FormControl, MenuItem, Select, InputLabel, Divider, ListSubheader, Chip, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField, selectClasses } from '@mui/material';
+import { FormHelperText, Button, Badge, Stack, Modal, FormControl, MenuItem, Select, InputLabel, Divider, ListSubheader, Chip, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField, selectClasses, Tooltip } from '@mui/material';
 
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
@@ -37,9 +37,11 @@ import Toolbar from '@mui/material/Toolbar';
 import { toJS } from 'mobx';
 import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
+import InsertLinkIcon from '@mui/icons-material/InsertLink';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useIntl } from 'react-intl';
 import { CATEGORY_OPEN_ID, CATEGORY_STATE } from '../constants/tournamenConfig';
-import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
 import { systemStore } from '../stores/systemStore';
 import { analytics } from '../services/analytics';
 
@@ -123,7 +125,7 @@ export default observer(function TournamentCategories() {
                   //Senior Women 50 kg Left
                   categoryState={category.state}
                   title={generateTournamentCategoryTitle(intl, category.config)}
-                  subTitle={generateTournamentCategoryTitle(intl, category.config, 'handOnly')}
+                  subTitle={`${generateTournamentCategoryTitle(intl, category.config, 'handOnly')} [${getCategoryShortId(category.id)}]`}
                 />
               ))}
             </List>
@@ -234,15 +236,84 @@ const CategoryDetailsView = observer((props) => {
     }
   }
 
-  const addAthetesEnabled = currentTournamentCategory.state === CATEGORY_STATE.IDLE
+  const addAthetesEnabled = currentTournamentCategory.state === CATEGORY_STATE.IDLE;
+
+  const copyCategoryId = async (id) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      systemStore.displaySnackbar(true, 'category id copied', 'success');
+    } catch (e) {
+      
+    }
+  }
+
+  const copyCategoriesNames = async () => {
+    try {
+      const preparedNames = tournamentStore.tournamentCategoriesNames.join('\n');
+      await navigator.clipboard.writeText(preparedNames);
+      systemStore.displaySnackbar(true, 'hint.categories.copied', 'success')
+    } catch (error) {
+      
+    }
+  }
   
   return (
     <>
-      <Stack sx={{ flex: 7, flexDirection: 'column', p: 2 }}>
-        <Typography variant="h6" component="h6" sx={{ p: 0, textAlign: 'center' }}>
-          {generateTournamentCategoryTitle(intl, currentTournamentCategory.config, 'full')}
-        </Typography>
-        {addAthetesEnabled && (
+      <Stack sx={{ flex: 7, flexDirection: 'column', p: 2, }}>
+        <Grid container justifyContent={'space-between'}>
+          <Grid item xs={4}>
+            <Typography variant="h6" component="h6" sx={{ p: 0 }}>
+              {generateTournamentCategoryTitle(intl, currentTournamentCategory.config, 'full')}
+            </Typography>   
+            <Button
+              sx={{ alignSelf: 'center'}}
+              onClick={() => copyCategoryId(getCategoryShortId(currentTournamentCategory.id))}
+            >
+              <Stack direction="row" spacing={2}>
+                <Typography
+                  onClick={() => copyCategoryId(getCategoryShortId(currentTournamentCategory.id))}
+                  variant="body2"
+                  component="h6"
+                  sx={{ p: 0, textAlign: 'left', alignSelf: 'center', mr: -1 }}>
+                  {getCategoryShortId(currentTournamentCategory.id)}
+                </Typography>
+                <InsertLinkIcon sx={{ ml: 0, pl: 0 }} />
+              </Stack>
+            </Button>
+            <Stack>
+              {addAthetesEnabled && (
+                <Button
+                sx={{ mt: 1 }}
+                size='noraml'
+                // fullWidth
+                variant='contained'
+                onClick={navigateToCompetitors}
+                >
+                  {intl.formatMessage({ id: 'buttons.add.participant' })}
+                </Button>
+              )}
+            </Stack>
+          </Grid>
+          <Grid item xs={4} sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+          }}>
+            <Tooltip title={intl.formatMessage({ id: 'hint.categories.names.copy' })}>
+              <Button
+                startIcon={<ContentCopyIcon />}
+                // color="secondary"
+                size='normal'
+                variant='outlined'
+                onClick={copyCategoriesNames}
+              >
+                {intl.formatMessage({ id: 'buttons.copy.categoriesNames' })}
+              </Button>
+            </Tooltip>
+          </Grid>
+        </Grid>
+
+        {/* {addAthetesEnabled && (
           <Grid container justifyContent={'center'} sx={{ p: 2 }}>
             <Grid item xs={3}>
               <Button
@@ -256,7 +327,7 @@ const CategoryDetailsView = observer((props) => {
               </Button>
             </Grid>
           </Grid>
-        )}
+        )} */}
         <Stack elevation={2} sx={{ flexGrow: 1, mt: 1, p: 2, overflow: 'hidden', border: '2px solid #eee', borderRadius: 1  }}>
           <TextField
             fullWidth
@@ -280,7 +351,7 @@ const CategoryDetailsView = observer((props) => {
                 present={competitor.present}
                 weight={`${competitor.weight} ${weightUnitLabel}`}
                 categories={competitor.tournamentCategoryIds.map(
-                  (tournamentId) => tournamentStore.newTournamentCategories[tournamentId].categoryTitleFull
+                  (tournamentId) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentId].config, 'full')
                 )}
                 onEdit={() => {
                   setEditModalVisble(true);

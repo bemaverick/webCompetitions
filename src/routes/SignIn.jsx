@@ -41,21 +41,13 @@ export default function SignInSide() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await auth.signInWithGoogle();
+    try {
+      const res = await auth.signInWithGoogle();
+      console.log('res of auth');      
+    } catch (error) {
+      console.log('error', error);      
+    }
     navigate('/');
-    // const data = new FormData(event.currentTarget);
-    // console.log({
-    //   email: data.get('email'),
-    //   password: data.get('password'),
-    // });
-
-    // try {
-    //   await auth.signInWithEmail(data.get('email'), data.get('password'),);
-    //   navigate('/');
-    // } catch (error) {
-      
-    // }
-
   };
 
 

@@ -29,6 +29,7 @@ import Stack from '@mui/material/Stack';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +42,7 @@ import { useIntl } from 'react-intl';
 import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
 import { CATEGORY_STATE, FAKE_competitorsList } from '../constants/tournamenConfig';
 import { systemStore } from '../stores/systemStore';
+import { GoogleSheetImportModal } from '../components/GoogleSheetImportModal';
 
 
 let index = 0;
@@ -74,20 +76,6 @@ export default observer(function TournamentCompetitors() {
   const location = useLocation();
   const navigate = useNavigate();
   const intl = useIntl();
-
-  // React.useEffect(() => {
-  //   const res = []
-  //   tournamentStore.competitorsList.map((comp) => {
-  //     res.push({
-  //       ...comp,
-  //       tournamentCategoryIds: [],
-  //       present: true,
-  //     })
-  //   });
-  //   console.log('competitors', JSON.stringify(res), res);
-
-  // }, []);
-
   const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
 
   const [firstName, setFirstName] = React.useState('');
@@ -97,6 +85,7 @@ export default observer(function TournamentCompetitors() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(location.state?.tournamentCategoryId ? [location.state.tournamentCategoryId] : []);
   const [editModalVisble, setEditModalVisble] = React.useState(false);
+  const [importModal, setImportModal] = React.useState(false);
   const [selectedCompetitor, setSelectedCompetitor] =  React.useState(null);
   const [checkboxes, setCheckboxes] = React.useState({
     present: true,
@@ -165,13 +154,17 @@ export default observer(function TournamentCompetitors() {
       return;
     }
 
-    tournamentStore.addCompetitor({ 
+    const addedSuccessfully = tournamentStore.addCompetitor({ 
       firstName: firstNameTmp,
       lastName: lastNameTmp,
       weight: weight,
       tournamentCategoryIds: selectedCategoryIds,
       present: checkboxes.present
     });
+    if (!addedSuccessfully) {
+      systemStore.displaySnackbar(true, 'error.athlete.exist');
+      return;
+    }
     showValidationErrors(false);
     setFirstName('');
     setLastName('');
@@ -198,7 +191,7 @@ export default observer(function TournamentCompetitors() {
         <Toolbar />
         <Stack sx={{  p: 2, flexGrow: 1, overflow: 'hidden' }}>
           <Grid container spacing={1} sx={{ alignItems: 'top' }}>
-            <Grid item xs={1.5}>
+            <Grid item  xs={1.5}>
               <TextField
                 fullWidth
                 size='small'
@@ -351,12 +344,26 @@ export default observer(function TournamentCompetitors() {
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
                 present={competitor.present}
-                weight={competitor.weight} 
+                weight={`${competitor.weight} ${tournamentStore.weightUnit.value}`} 
+                source={competitor.source?.type}
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentId].config, 'full')
                  )}
               />
             ))}
+          </Stack>
+          <Stack alignItems={'center'}>
+            <Tooltip title={intl.formatMessage({ id: 'hint.competitors.import.googleSheet' })}>
+              <Button
+                startIcon={<CloudDownloadIcon />}
+                color="secondary"
+                size='small'
+                variant='contained'
+                onClick={() => setImportModal(true)}
+              >
+                {intl.formatMessage({ id: 'buttons.import.list' })}
+              </Button>
+            </Tooltip>
           </Stack>
         </Stack>
 
@@ -370,7 +377,13 @@ export default observer(function TournamentCompetitors() {
         }}
         competitor={selectedCompetitor}
         modalVisible={editModalVisble}
-      />             
+      />   
+      {importModal && (
+        <GoogleSheetImportModal
+          modalVisible={true}
+          onClose={() => setImportModal(false)}
+        /> 
+      )}
     </>
   )
 });

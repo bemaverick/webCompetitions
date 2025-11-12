@@ -53,7 +53,7 @@ export async function loader({request}) {
 }
 
 
-const drawerWidth = 260;
+const drawerWidth = 240;
 
 const drawerItems = [
   {
@@ -287,7 +287,7 @@ export default observer(function Root() {
           {competitionInProgress && drawerItems.map((item, index) => (
             <ListItem onClick={() => navigate(item.path)} key={item.id} disablePadding>
               <ListItemButton selected={pathname === item.path}>
-                <ListItemIcon>
+                <ListItemIcon sx={{ mr: -2 }}>
                   {item.icon()}
                 </ListItemIcon>
                 <ListItemText primary={intl.formatMessage({ id: item.titleId })} />
@@ -298,7 +298,17 @@ export default observer(function Root() {
         </List>
         <Box sx={{ flex: 1, border: '1px solid transparent'}} />
           <Button
-            sx={{ height: '40px', m: 2, mb: 0.5 }}
+            variant="text"
+            color="success"
+            size="small"
+            href="https://brick-swan-502.notion.site/What-s-New-in-Arm-Grid-2a9ab1eba8f480cd971ffb139f278094?source=copy_link" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            {intl.formatMessage({ id: 'common.whatsnew'})}
+          </Button>
+          <Button
+            sx={{ height: '40px', m: 2, mt: 1, mb: 0.5 }}
             //size='small'
             startIcon={loading ? <CircularProgress size={20} /> : null}
             variant='outlined'

@@ -172,7 +172,7 @@ export const MATCH_RESULT = {
   IDLE: STATUSES.IDLE,
   WIN: 'win',
   LOSE: 'lose',
-  DRAW: 'dwaw',
+  DRAW: 'draw',
 }
 
 export const TABLE_INITIAL_STATE = {
@@ -199,6 +199,10 @@ export const SEX = {
   WOMEN: 'women'
 };
 
+export const ATHLETES_LIST_SOURCE = {
+  CREATED: 'CREATED', // created_manually
+  IMPORTED: 'IMPORTED', // imported
+}
 
 export const FAKE_competitorsList1 = [
   { firstName: 'Сергій', lastName: 'Гоненко', weight: '70', category: '90_man_left', id: '1'},
