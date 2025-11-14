@@ -349,7 +349,7 @@ const CategoryDetailsView = observer((props) => {
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
                 weight={`${competitor.weight} ${weightUnitLabel}`}
-                participationStatus={`${competitor.participationStatus}`}
+                participationStatus={competitor.participationStatus}
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentId].config, 'full')
                 )}
