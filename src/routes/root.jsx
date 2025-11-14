@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "react-router-dom";
 import { getContacts, createContact } from "../contacts";
 import Snackbar from '@mui/material/Snackbar';
-import { Button, CircularProgress } from "@mui/material";
+import { Button, CircularProgress, Link } from "@mui/material";
 import { auth, useAuth } from '../contexts/AuthContext';
 import * as React from 'react';
 import Box from '@mui/material/Box';
@@ -37,7 +37,7 @@ import { CATEGORY_STATE } from "../constants/tournamenConfig";
 import { wait } from "../utils/common";
 import { Copyright } from "./SignIn";
 import { analytics } from "../services/analytics";
-import { APP_VERSION } from "../constants/config";
+import { APP_VERSION, FEEDBACK_EMAIL } from "../constants/config";
 
 
 export async function action() {
@@ -306,6 +306,16 @@ export default observer(function Root() {
             rel="noopener noreferrer"
           >
             {intl.formatMessage({ id: 'common.whatsnew'})}
+          </Button>
+          <Button 
+            variant="text"
+            color="info"
+            size="small"
+            href={`mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(`Support request from Arm Grid${APP_VERSION}`)}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            {intl.formatMessage({ id: 'buttons.contactUs'})}
           </Button>
           <Button
             sx={{ height: '40px', m: 2, mt: 1, mb: 0.5 }}

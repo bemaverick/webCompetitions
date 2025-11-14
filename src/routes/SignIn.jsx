@@ -17,17 +17,21 @@ import logo from '../assets/logo_black_transparent.png'
 import GoogleIcon from '@mui/icons-material/Google'; // 
 
 import { useAuth } from '../contexts/AuthContext';
+import { FEEDBACK_EMAIL } from '../constants/config';
 
 export function Copyright(props) {
   return (
-    <Typography variant="body2" color="text.secondary" align="center" {...props}>
-      {'Copyright © '}
-      <Link color="inherit">
-        Arm-Grid
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
+    <>
+      <Typography variant="body2" color="text.secondary" align="center" {...props}>
+        {'Copyright © '}
+        <Link color="inherit">
+          Arm-Grid
+        </Link>{' '}
+        {new Date().getFullYear()}
+        {'.'}
+      </Typography>
+    </>
+
   );
 }
 

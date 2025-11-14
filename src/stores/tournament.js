@@ -4,7 +4,7 @@ import { makeAutoObservable, autorun, toJS } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
-import { ATHLETES_LIST_SOURCE, CATEGORY_STATE, CLASSIFICATION_LIST_DEFAULT, HANDS, MATCH_RESULT, SEX, TABLE_INITIAL_STATE, TABLE_STATE, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
+import { ATHLETE_STATUS, ATHLETES_LIST_SOURCE, CATEGORY_STATE, CLASSIFICATION_LIST_DEFAULT, HANDS, MATCH_RESULT, SEX, TABLE_INITIAL_STATE, TABLE_STATE, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
 import { createTournamentCategoryConfig, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
 import { fromUnixTime, format } from 'date-fns';
 import { getIntl } from '../routes/App';
@@ -196,11 +196,11 @@ class TournamentStore {
   }
 
 
-  addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds, present, source = ATHLETES_LIST_SOURCE.CREATED }) => {
+  addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds, participationStatus, source = ATHLETES_LIST_SOURCE.CREATED }) => {
     analytics.logEvent('add_competitor', {
       firstName, 
       lastName, 
-      present,
+      participationStatus,
       weight, 
       source
     });
@@ -216,7 +216,7 @@ class TournamentStore {
       lastName, 
       weight, 
       id: uuidv4(),
-      present,
+      participationStatus,
       source: {
         type: source,
         createdAt: Date.now(),
@@ -285,7 +285,7 @@ class TournamentStore {
 
   setupFirstRound = () => {
     const actualCategory = this.competitorsList.filter(
-      ({ present, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && present
+      ({ participationStatus, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && participationStatus === ATHLETE_STATUS.CHECKED_IN
     );
     const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: MATCH_RESULT.IDLE }}}))
     this.currentTable.rounds[0].groupA = _.shuffle(groupA); // TODOD check
@@ -625,7 +625,7 @@ class TournamentStore {
       const category = this.newTournamentCategories[categoryId];
       if (category.state === CATEGORY_STATE.FINISHED) {
         categoriesResults.push({
-          name: generateTournamentCategoryTitle(getIntl(), category.config),
+          name: generateTournamentCategoryTitle(getIntl(), category.config, 'full'),
           results: this.results[categoryId].map((athlete) => `${athlete.lastName} ${athlete.firstName}`)
         })
       }

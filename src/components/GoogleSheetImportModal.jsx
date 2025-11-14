@@ -11,7 +11,7 @@ import DoneIcon from '@mui/icons-material/Done';
 import { Chip } from '@mui/material';
 import _ from 'lodash';
 import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
-import { ATHLETES_LIST_SOURCE, CATEGORY_STATE } from '../constants/tournamenConfig';
+import { ATHLETE_STATUS, ATHLETES_LIST_SOURCE, CATEGORY_STATE } from '../constants/tournamenConfig';
 import { detectGoogleSheetLink, extractGoogleSheetId } from '../services/google';
 import { systemStore } from '../stores/systemStore';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
@@ -27,7 +27,7 @@ import Tournament from '../routes/Tournament';
 //     weight: string;
 //     tournamentCategoryIds: string[];
 //     id: string;
-//     present?: boolean;
+//     participationStatus
 //   };
 // }
 
@@ -111,7 +111,7 @@ export const GoogleSheetImportModal = observer((props) => {
                 firstName: athlete['First Name'],
                 lastName: athlete['Last Name'],
                 weight: String(athlete['Weight']),
-                present: true,
+                participationStatus: ATHLETE_STATUS.REGISTERED,
                 tournamentCategoryIds: tournamentCategoryIds,
                 source: ATHLETES_LIST_SOURCE.IMPORTED
               })
@@ -142,7 +142,7 @@ export const GoogleSheetImportModal = observer((props) => {
             lineHeight: 1.5,
           }}
         >
-          {intl.formatMessage({ id: 'hint.googleShhet.requirements.alert' })}
+          {intl.formatMessage({ id: 'hint.googleSheet.requirements.alert' })}
           <br />
           <Link
             target="_blank"

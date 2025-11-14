@@ -145,6 +145,7 @@ export default observer(function TournamentSettings() {
             <Grid container sx={{ }} spacing={2}>
               <Grid item xs={6}>
                 <TextField
+                  size='small'
                   id="outlined-basic"
                   label={intl.formatMessage({ id: 'common.tournamentName' })}
                   variant="outlined"
@@ -169,6 +170,11 @@ export default observer(function TournamentSettings() {
                     label={intl.formatMessage({ id: 'common.tournamentDate' })}
                     value={new Date(tournamentDate)}
                     onChange={setTournamentDate}
+                    slotProps={{
+                      textField: { 
+                          size: 'small', // Це зробить input маленьким
+                      },
+                    }}
                   />
                   <FormHelperText>{intl.formatMessage({ id: 'placeholder.tournamentDate' })}</FormHelperText>
                 </FormControl>
@@ -176,7 +182,7 @@ export default observer(function TournamentSettings() {
             </Grid>
             <Grid container sx={{ justifyContent: 'center' }} spacing={2}>
               <Grid item xs={6}>
-                <FormControl fullWidth margin='normal'>
+                <FormControl size='small' fullWidth margin='normal'>
                   <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.tableNumber' })}</InputLabel>
                   <Select
                     labelId="demo-simple-select-label"
@@ -193,7 +199,7 @@ export default observer(function TournamentSettings() {
                 </FormControl>
               </Grid>
               <Grid item xs={6}>
-                <FormControl fullWidth margin='normal'>
+                <FormControl size='small' fullWidth margin='normal'>
                   <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.weightUnit' })}</InputLabel>
                   <Select
                     labelId="demo-simple-select-label"
