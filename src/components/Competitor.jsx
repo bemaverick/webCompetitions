@@ -133,7 +133,7 @@ export const CompetitorRow = (props) => {
             </Typography>
           </Grid>
         )}
-        {columnConfig.participationStatus?.visible && (
+        {columnConfig.participationStatus?.visible && props.participationStatus && (
           <Grid item  xs={columnConfig.participationStatus.flex } sx={{ textAlign: 'center' }}> 
             <Tooltip
               title={intl.formatMessage({ id: athletesStatusTransationKeys[props.participationStatus]})}
