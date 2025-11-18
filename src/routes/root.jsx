@@ -194,7 +194,7 @@ export default observer(function Root() {
           }); 
         }
         setLoading(true);
-        await saveResults(tournamentStore.results);
+       // await saveResults(tournamentStore.results);
         systemStore.setAppState('competitionsList');
         tournamentStore.resetStore();
         navigate('/');

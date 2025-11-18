@@ -41,6 +41,9 @@ import { ResultsByCategories } from '../components/ResultsByCategories';
 import { generateResultsPdf } from '../lib/pdf';
 import { analytics } from '../services/analytics';
 
+export const markWinnersChannel = new BroadcastChannel('auth_channel');
+
+
 function TabPanel(props) {
   const intl = useIntl();
   const { tournamentId, tournament } = props;
@@ -496,7 +499,7 @@ const TableContent = observer((props) => {
             {nextRoundButtonVisible && currentTableState === TABLE_STATE.IN_PROGRESS && (
               <Box sx={{ display: 'flex', p: 2, justifyContent: 'center' }}>
                 <Button
-                  onClick={() => tournamentStore.startNextRound()}
+                  onClick={() => { tournamentStore.startNextRound(); markWinnersChannel.postMessage({ }); }}
                   variant='contained'
                   disabled={notAllPairsCompleted}
                 >
@@ -521,9 +524,18 @@ const TableContent = observer((props) => {
           </Stack>
           <Stack sx={{ flex: 4, border: '0px solid black', overflow: 'scroll', alignItems: 'center'}}>
             <Box sx={{ p: 2, px: 4}}>
-            <Typography gutterBottom variant="h6" component="div">
-              {intl.formatMessage({ id: 'common.currentResults' })}
-            </Typography>
+              <Button
+                onClick={() => {
+                  navigate(`/tableStream/${currentTableIndex}`);
+
+                }}
+                type='outlined'
+              >
+                Stream Brackets
+              </Button>
+              <Typography gutterBottom variant="h6" component="div">
+                {intl.formatMessage({ id: 'common.currentResults' })}
+              </Typography>
               {tournamentStore.results[tournamentStore.currentTable.category]?.map((competitor, index) => (
                 <Typography
                   key={competitor?.id || index}
@@ -534,7 +546,6 @@ const TableContent = observer((props) => {
                 </Typography> 
               ))}
             </Box>
-            
           </Stack>
         </Stack>
       </>
@@ -624,6 +635,7 @@ const Pair = (props) => {
   const confirm = useConfirm();
   const { isFirstChecked, isSecondChecked } = props;
   
+  
   const tapOnCompetitor = (competitorId, gpoupName) => {
     if (isFirstChecked || isSecondChecked) {
       confirm({
@@ -634,12 +646,14 @@ const Pair = (props) => {
       })
         .then(() => {
           tournamentStore.markWinner(competitorId, gpoupName);
+          markWinnersChannel.postMessage({ competitorId, gpoupName });
         })
         .catch(() => {
           console.log('not confirmed');
         });
     } else {
       tournamentStore.markWinner(competitorId, gpoupName);
+      markWinnersChannel.postMessage({ competitorId, gpoupName });
     }
   };
 

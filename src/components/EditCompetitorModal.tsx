@@ -31,7 +31,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
   const [firstName, setFirstName] = React.useState(props.competitor?.firstName);
   const [lastName, setLastName] = React.useState(props.competitor?.lastName);
   const [weight, setWeight] = React.useState(props.competitor?.weight);
-  const [participationStatus, setParticipationStatus] = React.useState([props.competitor?.participationStatus]);
+  const [participationStatus, setParticipationStatus] = React.useState(props.competitor?.participationStatus);
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(props.competitor?.tournamentCategoryIds || []);
   // const [checkboxes, setCheckboxes] = React.useState({
   //   present: !!props.competitor?.present,
