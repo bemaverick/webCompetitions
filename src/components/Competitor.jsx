@@ -1,12 +1,16 @@
 import * as React from 'react';
-import { Grid, Typography, Divider, Chip } from '@mui/material';
+import { Grid, Typography, Tooltip, Chip, Box, Button } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import CreateIcon from '@mui/icons-material/Create';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
+import PersonIcon from '@mui/icons-material/Person';
 import { useIntl } from 'react-intl';
+import { ATHLETE_STATUS, ATHLETES_LIST_SOURCE } from '../constants/tournamenConfig';
+import { athletesStatusTransationKeys } from '../utils/athletesUtils';
 
 
 const getMedalEmoji = (position) => {
@@ -15,6 +19,29 @@ const getMedalEmoji = (position) => {
   if (position === 3) return '🥉'
   return '';
 } 
+
+const sourceChipIcons = {
+  [ATHLETES_LIST_SOURCE.CREATED]: <CreateIcon fontSize="small"/>,
+  [ATHLETES_LIST_SOURCE.IMPORTED]: <CloudDownloadIcon fontSize="small"/>
+}
+const sourceChipLabel = {
+  [ATHLETES_LIST_SOURCE.CREATED]: 'common.manual',
+  [ATHLETES_LIST_SOURCE.IMPORTED]: 'common.imported'
+}
+const sourceChipTooltip = {
+  [ATHLETES_LIST_SOURCE.CREATED]: 'hint.athlete.source.created',
+  [ATHLETES_LIST_SOURCE.IMPORTED]: 'hint.athlete.source.imported'
+}
+
+const sourceChipColor = {
+  [ATHLETES_LIST_SOURCE.CREATED]: 'primary',
+  [ATHLETES_LIST_SOURCE.IMPORTED]: 'secondary'
+}
+
+const participationStatusIcon = {
+  [ATHLETE_STATUS.REGISTERED]: <PersonIcon />,
+  [ATHLETE_STATUS.CHECKED_IN]: <HowToRegIcon color='success' />,
+}
 
 export const CompetitorRow = (props) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -37,7 +64,7 @@ export const CompetitorRow = (props) => {
     props.onEdit();
   }
 
-  const { moreButtonVisible = true, withEmoji = false} = props; 
+  const { moreButtonVisible = true, withEmoji = false } = props; 
   const { columnConfig = {
     firstName: {
       visible: true,
@@ -45,21 +72,30 @@ export const CompetitorRow = (props) => {
     },
     lastName: {
       visible: true,
-      flex: 2
+      flex: 1.5
     },
     weight: {
       visible: true,
-      flex: 1
+      flex: 0.5
     },
-    present: {
+    participationStatus: {
       visible: true,
-      flex: 2.5
+      flex: 2
+    },
+    source: {
+      visible: true,
+      flex: 1
     },
     categories: {
       visible: true,
-      flex: 5
+      flex: 5.5
     },
   } } = props;
+
+  if (!ATHLETES_LIST_SOURCE[props.source]) { //tmp to prevent from layout break
+    columnConfig.source.visible = false;
+    columnConfig.categories.flex = 6.5;
+  }
 
   return (
     <>
@@ -77,56 +113,81 @@ export const CompetitorRow = (props) => {
       </Menu>
       <Grid container columnSpacing={1} sx={{  pt:1, pb: 1, borderBottom: '1px solid rgba(0, 0, 0, 0.12)'  }}>
         {columnConfig.firstName?.visible && (
-          <Grid item xs={columnConfig.firstName.flex} sx={{ }}> 
-            <Typography variant="body1">
+          <Grid item xs={columnConfig.firstName.flex}> 
+            <Typography variant="body2">
               {withEmoji && getMedalEmoji(props.position)}{props.position}. {`  ${props.firstName}`}
             </Typography>
           </Grid>
         )}
         {columnConfig.lastName?.visible && (
           <Grid item xs={columnConfig.lastName.flex}> 
-            <Typography variant="body1">
+            <Typography variant="body2">
               {props.lastName}
             </Typography>
           </Grid>
         )}
         {columnConfig.weight?.visible && (
           <Grid item xs={columnConfig.weight.flex}> 
-            <Typography textAlign={'center'}  variant="body1">
-              {props.weight}
+            <Typography textAlign={'center'}  variant="body2">
+              {`${props.weight}`}
             </Typography>
           </Grid>
         )}
-        {columnConfig.present?.visible && (
-          <Grid item xs={columnConfig.present.flex } sx={{ }}> 
-            <Typography textAlign={'center'} variant="body1">
-              {intl.formatMessage({ id: props.present ? 'common.confirmed' : 'common.unConfirmed'})}
-            </Typography>
+        {columnConfig.participationStatus?.visible && props.participationStatus && (
+          <Grid item  xs={columnConfig.participationStatus.flex } sx={{ textAlign: 'center' }}> 
+            <Tooltip
+              title={intl.formatMessage({ id: athletesStatusTransationKeys[props.participationStatus]})}
+            >
+              {participationStatusIcon[props.participationStatus]}
+            </Tooltip>
+          </Grid>
+        )}
+        {columnConfig.source?.visible && !!ATHLETES_LIST_SOURCE[props.source] && (
+          <Grid item xs={columnConfig.source.flex}> 
+          <Tooltip title={intl.formatMessage({ id: sourceChipTooltip[props.source] })}>
+            <Chip
+              size="small"
+              icon={sourceChipIcons[props.source]}
+              label={intl.formatMessage({ id: sourceChipLabel[props.source] })}
+              variant="outlined"
+              color={sourceChipColor[props.source]}
+            />
+          </Tooltip>
           </Grid>
         )}
         {columnConfig.categories?.visible && (
-          <Grid item xs={columnConfig.categories.flex}>
+          <Grid item xs={columnConfig.categories.flex} sx={{ pr: 1 }}>
             <div style={{ display: 'flex', }}>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1}}>
-                {props.categories?.map((name) => (
-                  <Typography key={name} textAlign={'center'} component="p" variant="body1">
-                    {name}
-                  </Typography>  
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'row', flex: 1 }}>
+                  <Typography component="span" variant="body2">
+                    {props.categories?.map(category => `[${category}]`).join(' ')}
+                  </Typography> 
+                &nbsp;
               </div>
+              {props.checkInEnabled && (
+                <Box sx={{  ml: 2, }}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size='small' 
+                    startIcon={<HowToRegIcon />}
+                    sx={{ whiteSpace: 'nowrap' }}
+                    onClick={props.checkInAction}
+                  >
+                    {intl.formatMessage({ id: "buttons.checkIn" })}
+                  </Button>
+                </Box>
+              )}
               {moreButtonVisible && (
-                <IconButton sx={{ my: -1 }} onClick={handleClick} aria-label="більше">
+                <IconButton sx={{ my: -1 }} onClick={handleClick} aria-label="more">
                   <MoreVertIcon fontSize='small' />
                 </IconButton>
               )}
             </div>
           </Grid>
         )}
+
       </Grid>
     </>
   );
 };
-
-CompetitorRow.defaultProps = {
-
-}

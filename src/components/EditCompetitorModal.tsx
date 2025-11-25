@@ -6,11 +6,11 @@ import Typography from '@mui/material/Typography';
 import { useIntl } from 'react-intl';
 import { observer } from 'mobx-react-lite';
 import { tournamentStore } from '../stores/tournament';
-import DoneIcon from '@mui/icons-material/Done';
 import { Chip } from '@mui/material';
 import _ from 'lodash';
 import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
-import { CATEGORY_STATE } from '../constants/tournamenConfig';
+import { ATHLETE_STATUS, CATEGORY_STATE } from '../constants/tournamenConfig';
+import { athletesStatusHintTransationKeys, athletesStatusTransationKeys } from '../utils/athletesUtils';
 
 type EditCompetitorModalProps = {
   modalVisible: boolean;
@@ -21,7 +21,7 @@ type EditCompetitorModalProps = {
     weight: string;
     tournamentCategoryIds: string[];
     id: string;
-    present?: boolean;
+    participationStatus: typeof ATHLETE_STATUS.CHECKED_IN | typeof ATHLETE_STATUS.REGISTERED;
   };
 }
 
@@ -31,18 +31,13 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
   const [firstName, setFirstName] = React.useState(props.competitor?.firstName);
   const [lastName, setLastName] = React.useState(props.competitor?.lastName);
   const [weight, setWeight] = React.useState(props.competitor?.weight);
+  const [participationStatus, setParticipationStatus] = React.useState(props.competitor?.participationStatus);
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(props.competitor?.tournamentCategoryIds || []);
-  const [checkboxes, setCheckboxes] = React.useState({
-    present: !!props.competitor?.present,
-  });
-  const { present } = checkboxes;
+  // const [checkboxes, setCheckboxes] = React.useState({
+  //   present: !!props.competitor?.present,
+  // });
+  // const { present } = checkboxes;
 
-  const handleCheckboxChange = (event) => {
-    setCheckboxes({
-      ...checkboxes,
-      [event.target.name]: event.target.checked,
-    });
-  };
 
   const handleChange = (event) => {
     const {
@@ -62,13 +57,12 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
       weight,
       tournamentCategoryIds: selectedCategoryIds, 
       id: props.competitor.id,
-      present: !!present
+      participationStatus,
     });
     setFirstName('');
     setLastName('');
     setWeight('');
     setSelectedCategoryIds([]);
-    setCheckboxes({ present: false });
     props.onClose();
   }
 
@@ -158,11 +152,31 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
             />
           </Grid>
           <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
-            <Box sx={{ pt: 1, }}>
-              <Tooltip title={intl.formatMessage({ id: 'hint.participant.confimed' })}>
-                <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label={intl.formatMessage({ id: 'common.confirmed'})} />
-              </Tooltip>
-            </Box>
+            <FormControl size="small" fullWidth margin='normal'>
+              <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.athlete.participation.status' })}</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={participationStatus}
+                label={intl.formatMessage({ id: 'common.athlete.participation.status' })}
+                onChange={(event) => setParticipationStatus(event.target.value)}
+              >
+                {Object.values(ATHLETE_STATUS).map(
+                  (key) => (
+                    <MenuItem key={key} value={key}>
+                      <Tooltip
+                        placement='left'
+                        title={intl.formatMessage({ id: athletesStatusHintTransationKeys[key] })}
+                      >
+                        <span>
+                          {intl.formatMessage({ id: athletesStatusTransationKeys[key]})}
+                        </span>
+                      </Tooltip>
+                    </MenuItem>
+                  )
+                )}
+              </Select>
+            </FormControl>
           </Grid>
         </Grid>
 

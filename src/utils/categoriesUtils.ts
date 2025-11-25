@@ -36,6 +36,12 @@ export function generateTournamentCategoryTitle(intl, tournamentCategoryConfig, 
   return `${classificationTitle} ${sexTitle} ${weightCategoryValue}`;
 }
 
+export const getCategoryShortId = (categoryId) => {
+  const hexOnly = categoryId.replace(/-/g, ''); // 32 hex chars
+  return hexOnly.slice(0, 8);
+}
+
+
 export const categoryStateTranslationsKey = {
   [CATEGORY_STATE.IDLE]: 'common.state.idle',
   [CATEGORY_STATE.FINISHED]: 'common.state.finished',

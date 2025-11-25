@@ -4,10 +4,12 @@ import { makeAutoObservable, autorun, toJS } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
-import { CATEGORY_STATE, CLASSIFICATION_LIST_DEFAULT, HANDS, MATCH_RESULT, SEX, TABLE_INITIAL_STATE, TABLE_STATE, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
-import { createTournamentCategoryConfig, generateTournamentCategoryTitle } from '../utils/categoriesUtils';
+import { ATHLETE_STATUS, ATHLETES_LIST_SOURCE, CATEGORY_STATE, CLASSIFICATION_LIST_DEFAULT, HANDS, MATCH_RESULT, SEX, TABLE_INITIAL_STATE, TABLE_STATE, WEIGHT_CATEGORIES_DEFAULT, WEIGHT_UNIT_KG, WEIGHT_UNITS } from '../constants/tournamenConfig';
+import { createTournamentCategoryConfig, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
 import { fromUnixTime, format } from 'date-fns';
 import { getIntl } from '../routes/App';
+import { analytics } from '../services/analytics';
+import { markWinnersChannel } from '../routes/Tournament';
 // import { intl } from '../routes/App';
 
 class TournamentStore {
@@ -60,7 +62,7 @@ class TournamentStore {
 
 //tournamentCategories = {};
 
-  newTournamentCategories = {}; // should be renamed
+  newTournamentCategories = {}; // TODO should be renamed
 
   postponedCategoriesProgress = {}; // when user presses pause category progress is saving here
 
@@ -82,6 +84,7 @@ class TournamentStore {
     this.classificationCategories = classificationCategories;
     this.setTablesConfig(tablesCount);
     this.weightUnit = weightUnit;
+    analytics.logEvent('apply_tournament_settings');
   }
 
   setTablesConfig = (tablesCount) => {
@@ -112,6 +115,18 @@ class TournamentStore {
 
   createTournamentCategories = ({ classification, weightCategories, leftHand, rightHand, men, women }) => {
     const createdCategories = {};
+    try {
+      analytics.logEvent('generate_categories', { 
+        classification: classification.id,
+        weightCategories: Object.values(weightCategories)?.map(({ id, value }) => value || id),
+        leftHand,
+        rightHand,
+        men,
+        women
+      });
+    } catch(e) {
+      console.log('e', e)
+    }  
     for (const [key, category] of Object.entries(weightCategories)) {
       // const categoryTitleShort = `${classification.label} ${category.value} ${this.weightUnit.label}`;
       // const categoryTitleFull = `${classification.label} ${category.value} ${this.weightUnit.label}, mans, left hand`;
@@ -178,29 +193,52 @@ class TournamentStore {
     });
     this.competitorsList = updatedCompetitorsList; 
     delete this.newTournamentCategories[tournamentCategoryId];
+    analytics.logEvent('remove_category');
   }
 
 
-  addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds, present }) => {
+  addCompetitor = ({ firstName, lastName, weight, tournamentCategoryIds, participationStatus, source = ATHLETES_LIST_SOURCE.CREATED }) => {
+    analytics.logEvent('add_competitor', {
+      firstName, 
+      lastName, 
+      participationStatus,
+      weight, 
+      source
+    });
+    const competitorAlreadyPresented = !!this.competitorsList.find(
+      (competitor) => competitor.lastName === lastName && competitor.firstName === firstName
+    );
+    if (competitorAlreadyPresented) {
+      return false;
+    }
     const newCompetitor = {
       tournamentCategoryIds,
       firstName, 
       lastName, 
       weight, 
       id: uuidv4(),
-      present
+      participationStatus,
+      source: {
+        type: source,
+        createdAt: Date.now(),
+        subType: null, // will be used for sheet, form, website, api...
+      }
     }
     //this.competitorsList = [newCompetitor, ...this.competitorsList];
     this.competitorsList.unshift(newCompetitor);
+    return true;
 
   }
 
   editCompetitor = (editedCompetitor) => {
-    this.competitorsList = this.competitorsList.map((competitor) => editedCompetitor.id === competitor.id ? editedCompetitor : competitor);
+    this.competitorsList = this.competitorsList.map((competitor) => editedCompetitor.id === competitor.id ? { ...competitor, ...editedCompetitor } : competitor);
+    analytics.logEvent('edit_competitor');
   }
 
   removeCompetitorFromList = (competitorId) => {
     this.competitorsList = this.competitorsList.filter(({ id }) => id !== competitorId);
+    analytics.logEvent('remove_competitor');
+    
   }
 
   removeCompetitorFromCategory = (competitorId, tournamentCategoryId) => {
@@ -216,6 +254,7 @@ class TournamentStore {
         return competitor;
       });
     }
+    analytics.logEvent('remove_competitor_from_category');
   }
 
   shuffleCategoryCompetitors = () => {
@@ -224,6 +263,7 @@ class TournamentStore {
 
   setTableCategory = (tableId, category) => {
     this.tables[tableId].category = category;
+    analytics.logEvent('set_table_category');
   }
 
   setTableStatus = (tableId, state) => {
@@ -235,16 +275,18 @@ class TournamentStore {
     }
 
     this.tables[tableId].state = state;
+    analytics.logEvent('set_table_status', { table: tableId, state });
   }
 
   setTournamentCategoryStatus = (status) => { //idle, in_progress, paused, finished see CATEGORY_STATE
     const currentCategoryId = this.currentTable.category;
     this.newTournamentCategories[currentCategoryId].state = status;
+    analytics.logEvent('set_tournament_category_status', { state: status });
   }
 
   setupFirstRound = () => {
     const actualCategory = this.competitorsList.filter(
-      ({ present, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && present
+      ({ participationStatus, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && participationStatus === ATHLETE_STATUS.CHECKED_IN
     );
     const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: MATCH_RESULT.IDLE }}}))
     this.currentTable.rounds[0].groupA = _.shuffle(groupA); // TODOD check
@@ -254,9 +296,11 @@ class TournamentStore {
     this.currentRound.groupB = [];
     this.currentRound.finalist = null;
     this.currentRound.semifinalist = null;
+   // analytics.logEvent('setup_first_raund');
   }
 
   startNextRound = () => {
+    analytics.logEvent('start_next_round');
     const nextRoundIndex = this.currentRoundIndex + 1;
     const newRoundGroupA = [];
     let newRoundGroupB = [];
@@ -265,8 +309,8 @@ class TournamentStore {
     const finishedGroup = []; // list of competitors who have finished in current round;
     let exitToFinal = false; // who will go to final and who to semifinal, both competitors with no loses;
     let isSuperFinal = false; // when groupB is empty and there are 2 competitors in groupA with 1 lose for each;
-    console.log('initial finalist',  finalist)
-		console.log('initial semifinalist',  semifinalist)
+    // console.log('initial finalist',  finalist)
+		// console.log('initial semifinalist',  semifinalist)
 
     this.currentGroupA.map((competitor, index) => {
       const currentGroupALength = this.currentGroupA.length;
@@ -422,7 +466,8 @@ class TournamentStore {
   }
 
   markWinner = (competitorId, group) => {
-    console.log('competitorId', competitorId, group)
+   // analytics.logEvent('mark_winner');
+    // console.log('competitorId', competitorId, group)
     let currentGroup;
     if (group === 'groupA') {
       currentGroup = this.currentGroupA;
@@ -437,9 +482,29 @@ class TournamentStore {
       : selectedCompetitorIndex - 1;
     
     currentGroup[selectedCompetitorIndex].stats[this.currentRoundIndex].result = MATCH_RESULT.WIN;
+    const winner = currentGroup[selectedCompetitorIndex];
+    let loser = null;
 
     if (pairedCompetitorIndex < currentGroup.length) {
       currentGroup[pairedCompetitorIndex].stats[this.currentRoundIndex].result = MATCH_RESULT.LOSE;
+      loser = currentGroup[pairedCompetitorIndex];
+    }
+
+    // check
+    if (winner && loser) {
+      markWinnersChannel.postMessage({
+        winner: {
+          lastName: winner.lastName,
+         firstName: winner.firstName,
+         id: winner.id,
+        },
+        loser: {
+          lastName: loser.lastName,
+          firstName: loser.firstName,
+          id: loser.id,
+        },
+        tableIndex: this.currentTableIndex
+      })
     }
   }
   
@@ -455,8 +520,9 @@ class TournamentStore {
     results.splice(firstCompetitorIndex - finishedGroup.length, finishedGroup.length, ...finishedGroup);
 
     this.results[this.currentTable.category] = results.map((el) => el);
+   // analytics.logEvent('log_round_results');
 
-    console.log(toJS(this.results))
+    //console.log(toJS(this.results))
   }
 
   saveCategoryProgress = () => {
@@ -474,6 +540,8 @@ class TournamentStore {
       ...this.postponedCategoriesProgress,
     };
     this.setTableStatus(this.currentTableIndex, TABLE_STATE.IDLE);
+    analytics.logEvent('save_category_progress');
+
   };
 
   startPostponedCategories = (currentTableIndex) => {
@@ -481,9 +549,29 @@ class TournamentStore {
     this.tables[currentTableIndex] = _.cloneDeep(categoryHistory);
     this.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
     delete this.postponedCategoriesProgress[this.currentTable.category];
+    analytics.logEvent('start_postponed_category');
   }
 
   removeResults = () => {
+    this.results = {};
+  }
+
+  resetStore = () => {
+    this.weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
+    this.tournamentName = '';
+    this.tournamentDate = Date.now();
+    this.tablesCount = 3;
+    this.currentTableIndex = 0;
+    this.tables = {
+      0: TABLE_INITIAL_STATE,
+      1: TABLE_INITIAL_STATE,
+      2: TABLE_INITIAL_STATE,
+    };
+    this.weightCategories = WEIGHT_CATEGORIES_DEFAULT;
+    this.classificationCategories = CLASSIFICATION_LIST_DEFAULT;
+    this.newTournamentCategories = {};
+    this.postponedCategoriesProgress = {};
+    this.competitorsList = [];
     this.results = {};
   }
 
@@ -558,7 +646,7 @@ class TournamentStore {
       const category = this.newTournamentCategories[categoryId];
       if (category.state === CATEGORY_STATE.FINISHED) {
         categoriesResults.push({
-          name: generateTournamentCategoryTitle(getIntl(), category.config),
+          name: generateTournamentCategoryTitle(getIntl(), category.config, 'full'),
           results: this.results[categoryId].map((athlete) => `${athlete.lastName} ${athlete.firstName}`)
         })
       }
@@ -570,12 +658,22 @@ class TournamentStore {
     }
   }
 
+  get
+  tournamentCategoriesNames() {
+    const categoriesNames = [];
+    Object.values(this.newTournamentCategories).map(category => {
+      categoriesNames.push(
+        `${generateTournamentCategoryTitle(getIntl(), category.config, 'full')} [${getCategoryShortId(category.id)}]`
+      )
+    })
+    return categoriesNames;
+  }
 
 
 }
 
 export const tournamentStore = new TournamentStore();
 
-autorun(() => {
-  //console.log("Energy level:", tournamentStore)
-})
+// autorun(() => {
+//   //console.log("Energy level:", tournamentStore)
+// })

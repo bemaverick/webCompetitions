@@ -5,6 +5,7 @@ import { Toolbar, Stack} from '@mui/material';
 import { tournamentStore } from '../stores/tournament';
 import { generateResultsPdf } from '../lib/pdf';
 import { ResultsByCategories } from '../components/ResultsByCategories';
+import { analytics } from '../services/analytics';
 
 export default observer(function TournamentResults() {
   const results = [];
@@ -21,7 +22,10 @@ export default observer(function TournamentResults() {
       <Toolbar />
       <ResultsByCategories
         results={results}
-        onClickGenerate={() => generateResultsPdf(tournamentStore.resultForPDF)}
+        onClickGenerate={() => {
+          analytics.logEvent('on_generate_pdf_current');
+          generateResultsPdf(tournamentStore.resultForPDF);
+        }}
       />
     </Stack>
   )

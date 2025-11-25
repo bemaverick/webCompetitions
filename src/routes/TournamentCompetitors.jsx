@@ -5,7 +5,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import { Chip } from '@mui/material';
+import { Chip, Alert, AlertTitle } from '@mui/material';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -29,6 +29,7 @@ import Stack from '@mui/material/Stack';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,8 +40,10 @@ import { CompetitorRow } from '../components/Competitor';
 import { EditCompetitorModal } from '../components/EditCompetitorModal';
 import { useIntl } from 'react-intl';
 import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
-import { CATEGORY_STATE, FAKE_competitorsList } from '../constants/tournamenConfig';
+import { ATHLETE_STATUS, CATEGORY_STATE } from '../constants/tournamenConfig';
 import { systemStore } from '../stores/systemStore';
+import { GoogleSheetImportModal } from '../components/GoogleSheetImportModal';
+import { athletesStatusHintTransationKeys, athletesStatusTransationKeys } from '../utils/athletesUtils';
 
 
 let index = 0;
@@ -74,39 +77,24 @@ export default observer(function TournamentCompetitors() {
   const location = useLocation();
   const navigate = useNavigate();
   const intl = useIntl();
-  console.log('tournamentCategoryId', location)
   const weightUnitLabel = intl.formatMessage({ id: `unit.weight.${tournamentStore.weightUnit.value}`});
 
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [validationErrors, showValidationErrors] = React.useState(false);
-
-  // const [firstName, setFirstName] = React.useState('');
-  // const [lastName, setLastName] = React.useState('');
-  const [weight, setWeight] = React.useState('105');
+  const [weight, setWeight] = React.useState('');
+  const [participationStatus, setParticipationStatus] = React.useState(ATHLETE_STATUS.CHECKED_IN);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(location.state?.tournamentCategoryId ? [location.state.tournamentCategoryId] : []);
   const [editModalVisble, setEditModalVisble] = React.useState(false);
+  const [importModal, setImportModal] = React.useState(false);
   const [selectedCompetitor, setSelectedCompetitor] =  React.useState(null);
-  const [checkboxes, setCheckboxes] = React.useState({
-    present: true,
-  });
   const [filterParam, setFilterParam] = React.useState('all');
-
-  const { present } = checkboxes;
-
-  const handleCheckboxChange = (event) => {
-    setCheckboxes({
-      ...checkboxes,
-      [event.target.name]: event.target.checked,
-    });
-  };
 
   const handleChange = (event) => {
     const {
       target: { value },
     } = event;
-    console.log('handle change', value);
 
     const containOnlyIdleCAtegories = value.every(
       (categoryId) => tournamentStore.newTournamentCategories[categoryId].state === CATEGORY_STATE.IDLE
@@ -131,11 +119,8 @@ export default observer(function TournamentCompetitors() {
         || competitor.weight.toLowerCase().includes(searchQuery.toLowerCase())
       ))
     }
-    if (filterParam === 'present') {
-      filtered = tournamentStore.competitorsList.filter((competitor) => competitor.present)
-    };
-    if (filterParam === 'preliminary') {
-      filtered = tournamentStore.competitorsList.filter((competitor) => !competitor.present)
+    if (filterParam === ATHLETE_STATUS.CHECKED_IN || filterParam === ATHLETE_STATUS.REGISTERED) {
+      filtered = tournamentStore.competitorsList.filter((competitor) => competitor.participationStatus === filterParam)
     };
     return filtered;
 
@@ -156,19 +141,22 @@ export default observer(function TournamentCompetitors() {
       return;
     }
 
-    tournamentStore.addCompetitor({ 
+    const addedSuccessfully = tournamentStore.addCompetitor({ 
       firstName: firstNameTmp,
       lastName: lastNameTmp,
       weight: weight,
       tournamentCategoryIds: selectedCategoryIds,
-      present: checkboxes.present
+      participationStatus: participationStatus,
     });
+    if (!addedSuccessfully) {
+      systemStore.displaySnackbar(true, 'error.athlete.exist');
+      return;
+    }
     showValidationErrors(false);
     setFirstName('');
     setLastName('');
     setWeight('');
     // setSelectedCategoryIds([]);
-    //setCheckboxes({ present: false })
   }
 
   const deleteCompetitor = (competitorId, categories) => {
@@ -182,6 +170,11 @@ export default observer(function TournamentCompetitors() {
    
   }
 
+  const checkInAthlete = (id) => { 
+    tournamentStore.editCompetitor({ id, participationStatus: ATHLETE_STATUS.CHECKED_IN });
+    systemStore.displaySnackbar(true, 'message.athlete.checkedIn', 'success')
+  }
+
 
   return (
     <>
@@ -189,7 +182,7 @@ export default observer(function TournamentCompetitors() {
         <Toolbar />
         <Stack sx={{  p: 2, flexGrow: 1, overflow: 'hidden' }}>
           <Grid container spacing={1} sx={{ alignItems: 'top' }}>
-            <Grid item xs={1.5}>
+            <Grid item  xs={1.5}>
               <TextField
                 fullWidth
                 size='small'
@@ -275,12 +268,35 @@ export default observer(function TournamentCompetitors() {
                 error={validationErrors && !weight}
               />
             </Grid>
-            <Grid item xs={1.5} sx={{ display: 'flex', alignItems: 'start',  justifyContent: 'center'}}>
-              <Box sx={{ pt: 1, }}>
-                <Tooltip title={intl.formatMessage({ id: 'hint.participant.confimed' })}>
-                  <FormControlLabel control={<Checkbox color="success" checked={present} onChange={handleCheckboxChange} name='present' />} label={intl.formatMessage({ id: 'common.confirmed'})} />
-                </Tooltip>
-              </Box>
+            <Grid
+              item xs={1.5}
+              // sx={{ display: 'flex', alignItems: 'start',  justifyContent: 'center'}}
+            >
+              <FormControl size="small" fullWidth margin='normal'>
+                <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.athlete.participation.status' })}</InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  value={participationStatus}
+                  label={intl.formatMessage({ id: 'common.athlete.participation.status' })}
+                  onChange={(event) => setParticipationStatus(event.target.value)}
+                >
+                  {Object.values(ATHLETE_STATUS).map(
+                    (key) => (
+                      <MenuItem key={key} value={key}>
+                        <Tooltip
+                          placement='left'
+                          title={intl.formatMessage({ id: athletesStatusHintTransationKeys[key] })}
+                        >
+                          <span>
+                            {intl.formatMessage({ id: athletesStatusTransationKeys[key]})}
+                          </span>
+                        </Tooltip>
+                      </MenuItem>
+                    )
+                  )}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={2}>
               <Button
@@ -294,7 +310,12 @@ export default observer(function TournamentCompetitors() {
               </Button>
             </Grid>
           </Grid>
-          <Grid container spacing={1} sx={{ pt: 1 }}>
+          <Typography variant="body2"
+            sx={{ color: 'warning.main' }}
+          >
+            {intl.formatMessage({ id: 'warning.athletes.statusRequired' })}
+          </Typography>
+          <Grid container spacing={1} sx={{ pt: 2 }}>
             <Grid item xs={9}>
               <TextField
                 fullWidth
@@ -323,14 +344,12 @@ export default observer(function TournamentCompetitors() {
                   MenuProps={MenuProps}
                 >
                   <MenuItem value={'all'}>{intl.formatMessage({ id: 'filter.participants.all' })}</MenuItem>
-                  <MenuItem value={'present'}>{intl.formatMessage({ id: 'filter.participants.confirmed' })}</MenuItem>
-                  <MenuItem value={'preliminary'}>{intl.formatMessage({ id: 'filter.participants.preliminary' })}</MenuItem>
+                  <MenuItem value={ATHLETE_STATUS.CHECKED_IN}>{intl.formatMessage({ id: "filter.participants.checkedIn" })}</MenuItem>
+                  <MenuItem value={ATHLETE_STATUS.REGISTERED}>{intl.formatMessage({ id: 'filter.participants.registered' })}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
           </Grid>
-
-
           <Stack sx={{ flexGrow: 1, overflow: 'scroll' }}>
             {сompetitorsList.map((competitor, index) => (
               <CompetitorRow
@@ -343,13 +362,29 @@ export default observer(function TournamentCompetitors() {
                 position={сompetitorsList.length - index}
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
-                present={competitor.present}
-                weight={competitor.weight} 
+                participationStatus={competitor.participationStatus}
+                weight={`${competitor.weight} ${tournamentStore.weightUnit.value}`} 
+                source={competitor.source?.type}
+                checkInEnabled={competitor.participationStatus === ATHLETE_STATUS.REGISTERED}
+                checkInAction={() => checkInAthlete(competitor.id)}
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentId].config, 'full')
                  )}
               />
             ))}
+          </Stack>
+          <Stack alignItems={'center'}>
+            <Tooltip title={intl.formatMessage({ id: 'hint.competitors.import.googleSheet' })}>
+              <Button
+                startIcon={<CloudDownloadIcon />}
+                color="secondary"
+                size='small'
+                variant='contained'
+                onClick={() => setImportModal(true)}
+              >
+                {intl.formatMessage({ id: 'buttons.import.list' })}
+              </Button>
+            </Tooltip>
           </Stack>
         </Stack>
 
@@ -363,7 +398,13 @@ export default observer(function TournamentCompetitors() {
         }}
         competitor={selectedCompetitor}
         modalVisible={editModalVisble}
-      />             
+      />   
+      {importModal && (
+        <GoogleSheetImportModal
+          modalVisible={true}
+          onClose={() => setImportModal(false)}
+        /> 
+      )}
     </>
   )
 });

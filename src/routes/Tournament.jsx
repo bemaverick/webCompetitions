@@ -10,6 +10,7 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import Divider from '@mui/material/Divider';
 import { Grid, Stack, Toolbar, FormHelperText, Card, CardContent, Chip  } from '@mui/material';
+import CastIcon from '@mui/icons-material/Cast';
 import { styled } from "@mui/material/styles";
 import List from '@mui/material/List';
 import Tooltip from '@mui/material/Tooltip';
@@ -39,6 +40,10 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { auth } from '../contexts/AuthContext';
 import { ResultsByCategories } from '../components/ResultsByCategories';
 import { generateResultsPdf } from '../lib/pdf';
+import { analytics } from '../services/analytics';
+
+export const markWinnersChannel = new BroadcastChannel('auth_channel');
+
 
 function TabPanel(props) {
   const intl = useIntl();
@@ -49,6 +54,17 @@ function TabPanel(props) {
       snapshotListenOptions: { includeMetadataChanges: false },
     }
   )
+
+  React.useEffect(() => {
+    if (error) {
+      try {
+        analytics.logEvent('fetch_tournament_categories_results_errors', { errors: JSON.stringify( error)});
+        
+      } catch (error) {
+      }
+    }
+  }, [error])
+  
   const results = [];
   const categoriesResults = [];
 
@@ -80,11 +96,14 @@ function TabPanel(props) {
       date: tournament.tournament.date,
       categoriesResults: categoriesResults,
     }
-    console.log('pdfResults', pdfResults);
+
     return (
       <ResultsByCategories
         results={results}
-        onClickGenerate={() => generateResultsPdf(pdfResults)}
+        onClickGenerate={() => {
+          analytics.logEvent('on_generate_pdf_past');
+          generateResultsPdf(pdfResults);
+        }}
       />
     )
   }
@@ -114,6 +133,16 @@ const TournamentList = observer(() => {
     }
   )
 
+  React.useEffect(() => {
+    if (error) {
+      try {
+        analytics.logEvent('fetch_tournaments_list_errors', { errors: JSON.stringify( error)});
+        
+      } catch (error) {
+      }
+    }
+  }, [error])
+
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -126,18 +155,23 @@ const TournamentList = observer(() => {
     )
   }
 
+  const goToTournamentCreation = () => {
+    systemStore.setAppState('competitionInProgress');
+    analytics.logEvent('create_tournament');
+  }
+
   if (!loading && !tournamentsSnapshot?.docs?.length) {
     return (
       <>
         <Toolbar />
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1,  alignItems: 'center', justifyContent: 'center', pb: 20, border: '1px solid green'}}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1,  alignItems: 'center', justifyContent: 'center', pb: 20, }}>
           <Typography variant="h6" component="h6" sx={{ pb: 4 }}>
             {intl.formatMessage({ id: 'hint.emptyState.noToutnaments' })}
           </Typography>
           <Button
             sx={{ mt: 2, mb: 3, }}
-            onClick={() => systemStore.setAppState('competitionInProgress')} // TODO move to constants
+            onClick={goToTournamentCreation} // TODO move to constants
             variant='outlined'
           >
             {intl.formatMessage({ id: 'button.create.new.tournament' })}
@@ -218,9 +252,10 @@ const TableContent = observer((props) => {
   const isFinalsAvailable = !!Object.keys(tournamentStore.postponedCategoriesProgress).length;
 
   const startMatches = () => {
+    markWinnersChannel.postMessage({ type: 'refresh' });
     if (currentTable.category) {
       tournamentStore.setTableStatus(currentTableIndex, TABLE_STATE.IN_PROGRESS);
-      tournamentStore.setTournamentCategoryStatus(TABLE_STATE.IN_PROGRESS);
+      tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
     }
   }
 
@@ -329,6 +364,7 @@ const TableContent = observer((props) => {
                 sx={{ mt: 2 }}
                 onClick={() => {
                   tournamentStore.startPostponedCategories(currentTableIndex);
+                  markWinnersChannel.postMessage({ type: 'refresh' });
                 }}
                 variant='outlined'
               >
@@ -432,6 +468,7 @@ const TableContent = observer((props) => {
                 onClick={() => {
                   tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.PAUSED);
                   tournamentStore.saveCategoryProgress();
+                  markWinnersChannel.postMessage({ type: 'refresh' });
                 //  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
 
                 }}
@@ -466,7 +503,7 @@ const TableContent = observer((props) => {
             {nextRoundButtonVisible && currentTableState === TABLE_STATE.IN_PROGRESS && (
               <Box sx={{ display: 'flex', p: 2, justifyContent: 'center' }}>
                 <Button
-                  onClick={() => tournamentStore.startNextRound()}
+                  onClick={() => { tournamentStore.startNextRound(); markWinnersChannel.postMessage({ }); }}
                   variant='contained'
                   disabled={notAllPairsCompleted}
                 >
@@ -490,10 +527,27 @@ const TableContent = observer((props) => {
 
           </Stack>
           <Stack sx={{ flex: 4, border: '0px solid black', overflow: 'scroll', alignItems: 'center'}}>
-            <Box sx={{ p: 2, px: 4}}>
-            <Typography gutterBottom variant="h6" component="div">
-              {intl.formatMessage({ id: 'common.currentResults' })}
-            </Typography>
+            <Box sx={{ pb: 2, px: 4}}>
+              <Tooltip
+                title={intl.formatMessage({ id: 'hint.table.onenStream' })}
+              >
+                <Button
+                  onClick={() => {
+                    window.open(`#/tableStream/${currentTableIndex}`);
+                  }}
+
+                  sx={{ mb: 2, }}
+                  variant='outlined'
+                  endIcon={<CastIcon />}
+
+                >
+                  {intl.formatMessage({ id: "buttons.open.streamTable" })}
+                </Button>
+              </Tooltip>
+
+              <Typography gutterBottom variant="h6" component="div">
+                {intl.formatMessage({ id: 'common.currentResults' })}
+              </Typography>
               {tournamentStore.results[tournamentStore.currentTable.category]?.map((competitor, index) => (
                 <Typography
                   key={competitor?.id || index}
@@ -504,7 +558,6 @@ const TableContent = observer((props) => {
                 </Typography> 
               ))}
             </Box>
-            
           </Stack>
         </Stack>
       </>
@@ -593,6 +646,7 @@ const Pair = (props) => {
   const intl = useIntl();
   const confirm = useConfirm();
   const { isFirstChecked, isSecondChecked } = props;
+  
   
   const tapOnCompetitor = (competitorId, gpoupName) => {
     if (isFirstChecked || isSecondChecked) {

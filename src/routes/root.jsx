@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "react-router-dom";
 import { getContacts, createContact } from "../contacts";
 import Snackbar from '@mui/material/Snackbar';
-import { Button } from "@mui/material";
+import { Button, CircularProgress, Link } from "@mui/material";
 import { auth, useAuth } from '../contexts/AuthContext';
 import * as React from 'react';
 import Box from '@mui/material/Box';
@@ -34,6 +34,10 @@ import { fromUnixTime, format } from 'date-fns';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { firestoreDB } from "../firebase";
 import { CATEGORY_STATE } from "../constants/tournamenConfig";
+import { wait } from "../utils/common";
+import { Copyright } from "./SignIn";
+import { analytics } from "../services/analytics";
+import { APP_VERSION, FEEDBACK_EMAIL } from "../constants/config";
 
 
 export async function action() {
@@ -49,7 +53,7 @@ export async function loader({request}) {
 }
 
 
-const drawerWidth = 260;
+const drawerWidth = 240;
 
 const drawerItems = [
   {
@@ -86,7 +90,9 @@ const drawerItems = [
   },
 ]
 
-const tournamentsRef = collection(firestoreDB, "armGrid_tournaments");
+//const tournamentsRef = collection(firestoreDB, "armGrid_tournaments");
+const tournamentsRef = collection(firestoreDB, "Arm_Grid_tournaments"); //prod;
+
 
 
 const saveResults = async (results) => {
@@ -97,7 +103,7 @@ const saveResults = async (results) => {
     const tournamentRef = doc(tournamentsRef);
     const tournament = {
       tournament: {
-        name: tournamentStore.tournamentName,
+        name: tournamentStore.tournamentName || 'Unnamed Tournament', // TODO crutch
         date: formattedDate,
         tablesCount: tournamentStore.tablesCount,
         weightUnit: tournamentStore.weightUnit.value,
@@ -108,14 +114,19 @@ const saveResults = async (results) => {
         uid: userId
       },
     }
+    const tournamentsWithoutResults = Object.values(tournamentStore.newTournamentCategories).every(({ state }) => state !== CATEGORY_STATE.FINISHED);
 
+    if (tournamentsWithoutResults) {
+      analytics.logEvent('on_save_empty_tournament');
+      return;
+    }
   
     await setDoc(tournamentRef, tournament);
-    const tournamentDocRef = doc(firestoreDB, "armGrid_tournaments", tournamentRef.id);
+   // const tournamentDocRef = doc(firestoreDB, "armGrid_tournaments", tournamentRef.id);
     for (const categoryId in tournamentStore.results) {
       if (tournamentStore.newTournamentCategories[categoryId].state === CATEGORY_STATE.FINISHED) { 
         // save results of finished categories
-        const tournamentCategoryResultCollectionRef = doc(collection(tournamentDocRef, 'results'));
+        const tournamentCategoryResultCollectionRef = doc(collection(tournamentRef, 'results'));
         await setDoc(tournamentCategoryResultCollectionRef, {
           category: {
             ...tournamentStore.newTournamentCategories[categoryId].config,
@@ -129,13 +140,16 @@ const saveResults = async (results) => {
         })
       }
     }
+    analytics.logEvent('save_results_success');
   } catch (error) {
+    analytics.logEvent('save_results_errors');
     console.log('error', error)
   }
 };
 export default observer(function Root() {
   const intl = useIntl();
   const auth = useAuth();
+  const [loading, setLoading] = React.useState(false);
   const navigate = useNavigate();
   const confirm = useConfirm();
   const pathname = useLocation().pathname;
@@ -144,30 +158,64 @@ export default observer(function Root() {
   const inCompetitionsListMode = systemStore.appState === 'competitionsList';
   const competitionInProgress = systemStore.appState === 'competitionInProgress';
 
+  React.useEffect(() => {
+    analytics.setUser(auth.user.uid);
+    analytics.setUserProps({
+      locale: navigator.language,
+    });
+    analytics.logEvent('session_launched');
+  }, []);
+
   const onPressFinish = async () => {
+    if (loading) { return; }
+    analytics.logEvent('on_finish_tournament');
+
     if (competitionInProgress) { 
       try {
+        const tournamentIsFinished = Object.values(tournamentStore.newTournamentCategories)
+          .every(({ state }) => state === CATEGORY_STATE.FINISHED);
         await confirm({
-          // title: "Ви впевнені що хочете завершити змагання?",
-          // description: "Поточний прогрес буде втрачено, результат змагань буде збережено",
-          title: "Ви впевнені, що хочете завершити турнір?",
-          description: "Ви не зможете продовжити змагання, але поточний результат буде збережений.",
-          confirmationText: intl.formatMessage({ id: 'common.yes.change' }),
+          title: intl.formatMessage({ id: 'warning.tournament.finish' }),
+          description: intl.formatMessage({ id: 'hint.tournament.finish' }),
+          confirmationText: intl.formatMessage({ id: 'buttons.confirm.finishTournament' }),
           cancellationText: intl.formatMessage({ id: 'common.no' }),
-        });
-
+          confirmationButtonProps: {
+            color: 'error'
+          }
+        }); 
+        if (!tournamentIsFinished) {
+          await wait(500);
+          await confirm({
+            title: intl.formatMessage({ id: "warning.tournament.unfinishedCategories" }),
+            description: intl.formatMessage({ id: 'hint.tournament.unfinishedCategories' }),
+            confirmationText: intl.formatMessage({ id: 'buttons.confirm.finishTournament' }),
+            cancellationText: intl.formatMessage({ id: 'common.no' }),
+            confirmationButtonProps: {
+              color: 'error'
+            }
+          }); 
+        }
+        setLoading(true);
         await saveResults(tournamentStore.results);
         systemStore.setAppState('competitionsList');
+        tournamentStore.resetStore();
         navigate('/');
       } catch (error) {
         conole.log('cancel', error);
+      } finally {
+        setLoading(false);
       }
     }
     if (inCompetitionsListMode) {
+      analytics.logEvent('logout');
       auth.logout();
     }
   }
 
+  const goToTournamentCreation = () => {
+    systemStore.setAppState('competitionInProgress');
+    analytics.logEvent('create_tournament');
+  }
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -211,6 +259,9 @@ export default observer(function Root() {
           <Typography variant="h5" noWrap component="div">
             {intl.formatMessage({ id: 'app.name' })}
           </Typography>
+          <Typography variant="caption" color='GrayText' gutterBottom sx={{ display: 'block' }}>
+            v{APP_VERSION}
+          </Typography>
 
         </Toolbar>
         <Divider />
@@ -225,7 +276,7 @@ export default observer(function Root() {
                   <ListItemText primary={intl.formatMessage({ id: "common.prevCompetitons" })} />
                 </ListItemButton>
               </ListItem>
-              <ListItem onClick={() => systemStore.setAppState('competitionInProgress')} disablePadding>
+              <ListItem onClick={goToTournamentCreation} disablePadding>
                 <ListItemButton selected={false}>
                   <ListItemIcon>
                     <EmojiEventsIcon />
@@ -238,7 +289,7 @@ export default observer(function Root() {
           {competitionInProgress && drawerItems.map((item, index) => (
             <ListItem onClick={() => navigate(item.path)} key={item.id} disablePadding>
               <ListItemButton selected={pathname === item.path}>
-                <ListItemIcon>
+                <ListItemIcon sx={{ mr: -2 }}>
                   {item.icon()}
                 </ListItemIcon>
                 <ListItemText primary={intl.formatMessage({ id: item.titleId })} />
@@ -249,8 +300,29 @@ export default observer(function Root() {
         </List>
         <Box sx={{ flex: 1, border: '1px solid transparent'}} />
           <Button
-            sx={{ height: '40px', m: 2, mb: 0.5 }}
+            variant="text"
+            color="success"
+            size="small"
+            href="https://brick-swan-502.notion.site/What-s-New-in-Arm-Grid-2a9ab1eba8f480cd971ffb139f278094?source=copy_link" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            {intl.formatMessage({ id: 'common.whatsnew'})}
+          </Button>
+          <Button 
+            variant="text"
+            color="info"
+            size="small"
+            href={`mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(`Support request from Arm Grid${APP_VERSION}`)}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            {intl.formatMessage({ id: 'buttons.contactUs'})}
+          </Button>
+          <Button
+            sx={{ height: '40px', m: 2, mt: 1, mb: 0.5 }}
             //size='small'
+            startIcon={loading ? <CircularProgress size={20} /> : null}
             variant='outlined'
             color='error'
             size='small'
@@ -258,10 +330,11 @@ export default observer(function Root() {
           >
             {intl.formatMessage({ id: competitionInProgress ? 'button.tournament.finish' : 'button.account.logout' })}
           </Button>
-        <Box sx={{ px: 2 }}>
-          <Typography variant="body1" color={'grey'} noWrap component="div">
+        <Box sx={{ px: 2, py: 1 }}>
+          <Copyright />
+          {/* <Typography variant="body1" color={'grey'} noWrap component="div">
             v. 0.2
-          </Typography>
+          </Typography> */}
         </Box>
 
         {/* <Divider />
@@ -300,10 +373,11 @@ export default observer(function Root() {
       <Snackbar
         ContentProps={{
           sx: {
-            backgroundColor: 'error.main',
+            backgroundColor: colorConfig[systemStore.snackBar.style],
             color: 'white',
           },
         }}
+        key={`snack-${systemStore.snackBar.message}`}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         open={systemStore.snackBar.visible}
         autoHideDuration={6000}
@@ -313,3 +387,9 @@ export default observer(function Root() {
     </Box>
   )
 })
+
+const colorConfig = {
+  success: 'success.main',
+  error: 'error.main',
+  warning: ''
+}

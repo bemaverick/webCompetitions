@@ -17,17 +17,21 @@ import logo from '../assets/logo_black_transparent.png'
 import GoogleIcon from '@mui/icons-material/Google'; // 
 
 import { useAuth } from '../contexts/AuthContext';
+import { FEEDBACK_EMAIL } from '../constants/config';
 
-function Copyright(props) {
+export function Copyright(props) {
   return (
-    <Typography variant="body2" color="text.secondary" align="center" {...props}>
-      {'Copyright © '}
-      <Link color="inherit" href="https://mui.com/">
-        Your Website
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
+    <>
+      <Typography variant="body2" color="text.secondary" align="center" {...props}>
+        {'Copyright © '}
+        <Link color="inherit">
+          Arm-Grid
+        </Link>{' '}
+        {new Date().getFullYear()}
+        {'.'}
+      </Typography>
+    </>
+
   );
 }
 
@@ -41,21 +45,13 @@ export default function SignInSide() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    await auth.signInWithGoogle();
+    try {
+      const res = await auth.signInWithGoogle();
+      console.log('res of auth');      
+    } catch (error) {
+      console.log('error', error);      
+    }
     navigate('/');
-    // const data = new FormData(event.currentTarget);
-    // console.log({
-    //   email: data.get('email'),
-    //   password: data.get('password'),
-    // });
-
-    // try {
-    //   await auth.signInWithEmail(data.get('email'), data.get('password'),);
-    //   navigate('/');
-    // } catch (error) {
-      
-    // }
-
   };
 
 
@@ -163,7 +159,7 @@ export default function SignInSide() {
                 </Link>
               </Grid>
             </Grid> */}
-            {/* <Copyright sx={{ mt: 5 }} /> */}
+            <Copyright sx={{ mt: 5 }} />
           </Box>
         </Box>
       </Grid>
