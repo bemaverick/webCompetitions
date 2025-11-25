@@ -490,23 +490,22 @@ class TournamentStore {
       loser = currentGroup[pairedCompetitorIndex];
     }
 
-    // // check
-    // if (winner && loser) {
-
-    //   markWinnersChannel.postMessage({
-    //     winner: {
-    //       lastName: winner.lastName,
-    //      firstName: winner.firstName,
-    //      id: winner.id,
-    //     },
-    //     loser: {
-    //       lastName: loser.lastName,
-    //       firstName: loser.firstName,
-    //       id: loser.id,
-    //     },
-    //     tableIndex: this.currentTableIndex
-    //   })
-    // }
+    // check
+    if (winner && loser) {
+      markWinnersChannel.postMessage({
+        winner: {
+          lastName: winner.lastName,
+         firstName: winner.firstName,
+         id: winner.id,
+        },
+        loser: {
+          lastName: loser.lastName,
+          firstName: loser.firstName,
+          id: loser.id,
+        },
+        tableIndex: this.currentTableIndex
+      })
+    }
   }
   
 
