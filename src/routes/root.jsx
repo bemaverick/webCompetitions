@@ -90,7 +90,9 @@ const drawerItems = [
   },
 ]
 
-const tournamentsRef = collection(firestoreDB, "armGrid_tournaments");
+//const tournamentsRef = collection(firestoreDB, "armGrid_tournaments");
+const tournamentsRef = collection(firestoreDB, "Arm_Grid_tournaments"); //prod;
+
 
 
 const saveResults = async (results) => {
@@ -120,11 +122,11 @@ const saveResults = async (results) => {
     }
   
     await setDoc(tournamentRef, tournament);
-    const tournamentDocRef = doc(firestoreDB, "armGrid_tournaments", tournamentRef.id);
+   // const tournamentDocRef = doc(firestoreDB, "armGrid_tournaments", tournamentRef.id);
     for (const categoryId in tournamentStore.results) {
       if (tournamentStore.newTournamentCategories[categoryId].state === CATEGORY_STATE.FINISHED) { 
         // save results of finished categories
-        const tournamentCategoryResultCollectionRef = doc(collection(tournamentDocRef, 'results'));
+        const tournamentCategoryResultCollectionRef = doc(collection(tournamentRef, 'results'));
         await setDoc(tournamentCategoryResultCollectionRef, {
           category: {
             ...tournamentStore.newTournamentCategories[categoryId].config,
