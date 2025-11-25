@@ -175,6 +175,13 @@ export const MATCH_RESULT = {
   DRAW: 'draw',
 }
 
+export const MATCH_STATE = { // used in stream table logic
+  CATEGORY_FINISHED: CATEGORY_STATE.FINISHED,
+  FINAl: 'final',
+  CALCULATING: 'calculating', // both competitors in progress
+  IN_PROGRESS: 'in_progress' // only on competitor in progress
+}
+
 export const TABLE_INITIAL_STATE = {
   category: '',
   state: TABLE_STATE.IDLE,

@@ -10,6 +10,7 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import Divider from '@mui/material/Divider';
 import { Grid, Stack, Toolbar, FormHelperText, Card, CardContent, Chip  } from '@mui/material';
+import CastIcon from '@mui/icons-material/Cast';
 import { styled } from "@mui/material/styles";
 import List from '@mui/material/List';
 import Tooltip from '@mui/material/Tooltip';
@@ -251,6 +252,7 @@ const TableContent = observer((props) => {
   const isFinalsAvailable = !!Object.keys(tournamentStore.postponedCategoriesProgress).length;
 
   const startMatches = () => {
+    markWinnersChannel.postMessage({ type: 'refresh' });
     if (currentTable.category) {
       tournamentStore.setTableStatus(currentTableIndex, TABLE_STATE.IN_PROGRESS);
       tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
@@ -362,6 +364,7 @@ const TableContent = observer((props) => {
                 sx={{ mt: 2 }}
                 onClick={() => {
                   tournamentStore.startPostponedCategories(currentTableIndex);
+                  markWinnersChannel.postMessage({ type: 'refresh' });
                 }}
                 variant='outlined'
               >
@@ -465,6 +468,7 @@ const TableContent = observer((props) => {
                 onClick={() => {
                   tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.PAUSED);
                   tournamentStore.saveCategoryProgress();
+                  markWinnersChannel.postMessage({ type: 'refresh' });
                 //  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
 
                 }}
@@ -523,16 +527,24 @@ const TableContent = observer((props) => {
 
           </Stack>
           <Stack sx={{ flex: 4, border: '0px solid black', overflow: 'scroll', alignItems: 'center'}}>
-            <Box sx={{ p: 2, px: 4}}>
-              <Button
-                onClick={() => {
-                  navigate(`/tableStream/${currentTableIndex}`);
-
-                }}
-                type='outlined'
+            <Box sx={{ pb: 2, px: 4}}>
+              <Tooltip
+                title={intl.formatMessage({ id: 'hint.table.onenStream' })}
               >
-                Stream Brackets
-              </Button>
+                <Button
+                  onClick={() => {
+                    window.open(`#/tableStream/${currentTableIndex}`);
+                  }}
+
+                  sx={{ mb: 2, }}
+                  variant='outlined'
+                  endIcon={<CastIcon />}
+
+                >
+                  {intl.formatMessage({ id: "buttons.open.streamTable" })}
+                </Button>
+              </Tooltip>
+
               <Typography gutterBottom variant="h6" component="div">
                 {intl.formatMessage({ id: 'common.currentResults' })}
               </Typography>
@@ -646,14 +658,12 @@ const Pair = (props) => {
       })
         .then(() => {
           tournamentStore.markWinner(competitorId, gpoupName);
-          markWinnersChannel.postMessage({ competitorId, gpoupName });
         })
         .catch(() => {
           console.log('not confirmed');
         });
     } else {
       tournamentStore.markWinner(competitorId, gpoupName);
-      markWinnersChannel.postMessage({ competitorId, gpoupName });
     }
   };
 
