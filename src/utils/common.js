@@ -28,3 +28,28 @@ export const useBrowserTabFocus = () => {
   }, []);
   return { isFocused };
 }
+
+
+export const useBroadcastChannel = (channelName) => {
+  const [message, setMessage] = useState(null);
+  const channel = new BroadcastChannel(channelName);
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      setMessage(event.data);
+    };
+
+    channel.onmessage = handleMessage;
+
+    // Clean up the channel when the component unmounts
+    return () => {
+      channel.close();
+    };
+  }, [channel]);
+
+  const sendMessage = (msg) => {
+    channel.postMessage(msg);
+  };
+
+  return { message, sendMessage };
+};

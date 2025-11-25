@@ -12,6 +12,7 @@ import TournamentSettings from "./TournamentSettings"
 import TournamentCategories from "./TournamentCategories"
 import TournamentCompetitors from "./TournamentCompetitors"
 import TournamentResults from "./TournamentResults";
+import TableStream from "./TableStream";
 import English from "../locales/en.json";
 import Ukrainian from "../locales/uk.json";
 
@@ -74,6 +75,7 @@ function App() {
                     <Route index path="/tournamentParticipants" element={<TournamentCompetitors />} />
                     <Route path="/tournamentResults" element={<TournamentResults />} />
                   </Route>
+                  <Route path="/tableStream/:id" element={<TableStream />} />
                   <Route path="/signup" element={<SignUp/>} />
                   <Route path="/signin" element={<SignIn/>} />
                 </Routes>

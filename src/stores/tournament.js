@@ -9,6 +9,7 @@ import { createTournamentCategoryConfig, generateTournamentCategoryTitle, getCat
 import { fromUnixTime, format } from 'date-fns';
 import { getIntl } from '../routes/App';
 import { analytics } from '../services/analytics';
+import { markWinnersChannel } from '../routes/Tournament';
 // import { intl } from '../routes/App';
 
 class TournamentStore {
@@ -481,10 +482,31 @@ class TournamentStore {
       : selectedCompetitorIndex - 1;
     
     currentGroup[selectedCompetitorIndex].stats[this.currentRoundIndex].result = MATCH_RESULT.WIN;
+    const winner = currentGroup[selectedCompetitorIndex];
+    let loser = null;
 
     if (pairedCompetitorIndex < currentGroup.length) {
       currentGroup[pairedCompetitorIndex].stats[this.currentRoundIndex].result = MATCH_RESULT.LOSE;
+      loser = currentGroup[pairedCompetitorIndex];
     }
+
+    // // check
+    // if (winner && loser) {
+
+    //   markWinnersChannel.postMessage({
+    //     winner: {
+    //       lastName: winner.lastName,
+    //      firstName: winner.firstName,
+    //      id: winner.id,
+    //     },
+    //     loser: {
+    //       lastName: loser.lastName,
+    //       firstName: loser.firstName,
+    //       id: loser.id,
+    //     },
+    //     tableIndex: this.currentTableIndex
+    //   })
+    // }
   }
   
 

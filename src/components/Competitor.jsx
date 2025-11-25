@@ -156,7 +156,7 @@ export const CompetitorRow = (props) => {
           </Grid>
         )}
         {columnConfig.categories?.visible && (
-          <Grid item xs={columnConfig.categories.flex}>
+          <Grid item xs={columnConfig.categories.flex} sx={{ pr: 1 }}>
             <div style={{ display: 'flex', }}>
               <div style={{ display: 'flex', flexDirection: 'row', flex: 1 }}>
                   <Typography component="span" variant="body2">
