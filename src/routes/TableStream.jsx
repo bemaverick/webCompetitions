@@ -202,16 +202,12 @@ export default observer(function TableStream() {
       const winner = event?.data?.winner;
       const loser = event?.data?.loser;
       console.log('Отримано повідомлення:', event.data, );
-      //console.log('Отримано повідомлення:', event?.data?.winner && event?.data?.loser && event?.data?.tableIndex === currentTableIndex);
 
       if (event?.data?.type === 'refresh') {
         location.reload();
       }
       if (winner && loser && event?.data?.tableIndex == currentTableIndex) {
         location.reload();
-      //  setTimeout(() => setPrevFirstCompetitor(winner), 1000);
-        //setTimeout(() => setPrevSecondCompetitor(loser), 1000);
-
         // setPrevFirstCompetitor(winner);
         // setPrevSecondCompetitor(loser);
       }
