@@ -40,7 +40,7 @@ import { EditCompetitorModal } from '../components/EditCompetitorModal';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useIntl } from 'react-intl';
-import { CATEGORY_OPEN_ID, CATEGORY_STATE } from '../constants/tournamenConfig';
+import { CATEGORY_OPEN_ID, CATEGORY_STATE, ATHLETE_STATUS } from '../constants/tournamenConfig';
 import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
 import { systemStore } from '../stores/systemStore';
 import { analytics } from '../services/analytics';
@@ -256,6 +256,11 @@ const CategoryDetailsView = observer((props) => {
       
     }
   }
+
+  const checkInAthlete = (id) => { 
+    tournamentStore.editCompetitor({ id, participationStatus: ATHLETE_STATUS.CHECKED_IN });
+    systemStore.displaySnackbar(true, 'message.athlete.checkedIn', 'success')
+  }
   
   return (
     <>
@@ -348,11 +353,13 @@ const CategoryDetailsView = observer((props) => {
                 position={index + 1}
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
-                weight={`${competitor.weight} ${weightUnitLabel}`}
+                weight={competitor.weight ? `${competitor.weight} ${weightUnitLabel}` : ''}
                 participationStatus={competitor.participationStatus}
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentId].config, 'full')
                 )}
+                checkInEnabled={competitor.participationStatus === ATHLETE_STATUS.REGISTERED}
+                checkInAction={() => checkInAthlete(competitor.id)}
                 onEdit={() => {
                   setEditModalVisble(true);
                   setSelectedCompetitor(competitor);
