@@ -58,12 +58,11 @@ export const GoogleSheetImportModal = observer((props) => {
     }
   }
 
-  function processImportedAthletes() {}
   function validateImportedAthlete(athlete) {
     return athlete['First Name']
       && athlete['Last Name']
       && athlete ['Tournament Categories']
-      && athlete ['Weight']
+      // && athlete ['Weight']
   }
   function validateImportedAthleteCategories(athleteCategories, originCategories) {
     const athleteCategoriesNames = athleteCategories.split(', ');
@@ -110,7 +109,7 @@ export const GoogleSheetImportModal = observer((props) => {
               tournamentStore.addCompetitor({
                 firstName: athlete['First Name'],
                 lastName: athlete['Last Name'],
-                weight: String(athlete['Weight']),
+                weight: String(athlete['Weight'] || ''),
                 participationStatus: ATHLETE_STATUS.REGISTERED,
                 tournamentCategoryIds: tournamentCategoryIds,
                 source: ATHLETES_LIST_SOURCE.IMPORTED
