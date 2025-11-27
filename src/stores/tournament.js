@@ -8,7 +8,7 @@ import { ATHLETE_STATUS, ATHLETES_LIST_SOURCE, CATEGORY_STATE, CLASSIFICATION_LI
 import { createTournamentCategoryConfig, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
 import { fromUnixTime, format } from 'date-fns';
 import { getIntl } from '../routes/App';
-import { analytics } from '../services/analytics';
+import { analytics, ANALYTICS_EVENTS } from '../services/analytics';
 import { markWinnersChannel } from '../routes/Tournament';
 // import { intl } from '../routes/App';
 
@@ -259,6 +259,8 @@ class TournamentStore {
 
   shuffleCategoryCompetitors = () => {
     this.currentTable.rounds[0].groupA = _.shuffle(this.currentTable.rounds[0].groupA);
+    analytics.logEvent(ANALYTICS_EVENTS.PRESS_SHUFFLE_COMPETITORS);
+    markWinnersChannel.postMessage({ type: 'refresh' });
   }
 
   setTableCategory = (tableId, category) => {

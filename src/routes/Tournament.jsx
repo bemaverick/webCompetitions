@@ -15,7 +15,8 @@ import CastIcon from '@mui/icons-material/Cast';
 import { styled } from "@mui/material/styles";
 import List from '@mui/material/List';
 import Tooltip from '@mui/material/Tooltip';
-
+import ShuffleIcon from '@mui/icons-material/Shuffle';
+import PauseIcon from '@mui/icons-material/Pause';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItem from '@mui/material/ListItem';
@@ -32,7 +33,7 @@ import { toJS  } from 'mobx';
 import { ConfirmProvider, useConfirm } from "material-ui-confirm";
 import { useIntl } from 'react-intl'
 import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
-import { CATEGORY_STATE, TABLE_STATE, ATHLETE_STATUS } from '../constants/tournamenConfig';
+import { CATEGORY_STATE, TABLE_STATE, ATHLETE_STATUS, MATCH_RESULT } from '../constants/tournamenConfig';
 import { systemStore } from '../stores/systemStore';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { useCollectionDataOnce, useCollectionOnce } from 'react-firebase-hooks/firestore';
@@ -309,7 +310,7 @@ const TableContent = observer((props) => {
     tournamentStore.setTableCategory(currentTableIndex, categoryId);
   }
 
-  if (currentTableState === 'idle') {
+  if (currentTableState === TABLE_STATE.IDLE) {
     return (
       <Stack sx={{ flex: 1, pb: 4, justifyContent: 'center',  alignItems: 'center' }}>
         <Box sx={{ width: '35%', display: 'flex', flexDirection: 'column',  alignItems: 'center' }}>
@@ -433,6 +434,15 @@ const TableContent = observer((props) => {
     //const categoryLabel= `${intl.formatMessage({ id: 'common.category' })} ${tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].categoryTitleFull}`
     const categoryLabel= generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].config, 'full')
 
+    let shuffleButtonVisible = false;
+    try {
+      shuffleButtonVisible = currentTableState === TABLE_STATE.IN_PROGRESS
+        && Object.keys(currentTable.rounds).length === 1
+        && currentTable.rounds[0].groupA.every(competitor => competitor.stats[0].result === MATCH_RESULT.IDLE);
+    } catch (error) {
+      console.log('shuffleButtonVisibility calculation', error);
+    }
+
     return (
       <>
         <Breadcrumbs sx={{ py: 2, px: 1 }} aria-label="breadcrumb">
@@ -452,31 +462,50 @@ const TableContent = observer((props) => {
           ))}
         </Breadcrumbs>
 
-        <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden' }}>
+        <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden', }}>
           <Stack sx={{ flex: 4 }}>
             <Box sx={{
-              display: 'flex', flexDirection: 'column', pb: 2, pt: 2, px: 1, alignItems: 'center', justifyContent: 'center'
+              display: 'flex', flexDirection: 'column', pb: 2, pt: 2, px: 1, alignItems: 'center',   border: '0px solid green'
               }}
             >
               <Typography variant='h6' textAlign={'center'} pb={2}>
                 {categoryLabel}
               </Typography>
-              <Button
-                onClick={() => {
-                  tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.PAUSED);
-                  tournamentStore.saveCategoryProgress();
-                  markWinnersChannel.postMessage({ type: 'refresh' });
-                //  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
-
-                }}
-                variant='contained'
-                disabled={!nextRoundButtonVisible || isLastRound}
+              <Tooltip
+                title={intl.formatMessage({ id: 'hint.categoryContinueLater' })}
               >
-                {intl.formatMessage({ id: 'buttons.action.pause.category' })}
-              </Button>
-              <Typography variant='body2' textAlign={'center'} pt={2} color='#696969db'>
+                <Button
+                  startIcon={<PauseIcon />}
+                  onClick={() => {
+                    tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.PAUSED);
+                    tournamentStore.saveCategoryProgress();
+                    markWinnersChannel.postMessage({ type: 'refresh' });
+                  //  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
+                  }}
+                  variant='outlined'
+                  disabled={!nextRoundButtonVisible || isLastRound}
+                >
+                  {intl.formatMessage({ id: 'buttons.action.pause.category' })}
+                </Button>
+              </Tooltip>
+              {shuffleButtonVisible && (
+                <Tooltip title={intl.formatMessage({ id: 'hint.shuffle.particiopants' })}>
+                  <Button
+                    color='secondary'
+                    sx={{ mt: 2 }}
+                    onClick={() => tournamentStore.shuffleCategoryCompetitors()}
+                    variant='outlined'
+                    endIcon={<ShuffleIcon />}
+                  >
+                    {intl.formatMessage({ id: 'buttons.shuffle.participants' })}
+                  </Button>
+                </Tooltip>
+              )}
+    
+
+              {/* <Typography variant='body2' textAlign={'center'} pt={2} color='#696969db'>
                 {intl.formatMessage({ id: 'hint.categoryContinueLater' })}
-              </Typography>
+              </Typography> */}
             </Box>
           </Stack>
           <Stack sx={{ flex: 4, flexDirection: 'column', overflow: 'scroll' }}>
