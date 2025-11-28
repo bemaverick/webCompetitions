@@ -22,4 +22,4 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig);
 export const firestoreDB = getFirestore(firebaseApp);
 export const firestoreTournamentsPath = 'armGrid_tournaments';
-// export const firestoreTournamentsPath = 'Arm_Grid_tournaments'; // production
+//export const firestoreTournamentsPath = 'Arm_Grid_tournaments'; // production

@@ -17,6 +17,7 @@ import List from '@mui/material/List';
 import Tooltip from '@mui/material/Tooltip';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import PauseIcon from '@mui/icons-material/Pause';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItem from '@mui/material/ListItem';
@@ -443,6 +444,24 @@ const TableContent = observer((props) => {
       console.log('shuffleButtonVisibility calculation', error);
     }
 
+    const resetBracketVisible = true;
+
+    const resetBracket = async () => {
+      try {
+        
+        await confirm({
+          title: intl.formatMessage({ id: 'warning.reset.bracket.confirmationModal1' }),
+          description: intl.formatMessage({ id: 'warning.reset.bracket.confirmationModal2' }),
+          confirmationText: intl.formatMessage({ id: 'buttons.reset.bracket.confirm' }),
+          cancellationText: intl.formatMessage({ id: 'buttons.cancel' }),
+          confirmationButtonProps: { color: 'error' },
+        });
+        tournamentStore.resetBracket();
+      } catch (error) {
+        
+      }
+    }
+
     return (
       <>
         <Breadcrumbs sx={{ py: 2, px: 1 }} aria-label="breadcrumb">
@@ -463,7 +482,8 @@ const TableContent = observer((props) => {
         </Breadcrumbs>
 
         <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden', }}>
-          <Stack sx={{ flex: 4 }}>
+          <Stack sx={{ flex: 4, border: '0px solid black', overflow: 'scroll', alignItems: 'center', justifyContent: 'space-between'}}>
+
             <Box sx={{
               display: 'flex', flexDirection: 'column', pb: 2, pt: 2, px: 1, alignItems: 'center',   border: '0px solid green'
               }}
@@ -507,6 +527,20 @@ const TableContent = observer((props) => {
                 {intl.formatMessage({ id: 'hint.categoryContinueLater' })}
               </Typography> */}
             </Box>
+            {resetBracketVisible && (
+              <Tooltip title={intl.formatMessage({ id: 'warning.reset.bracket' })}>
+                <Button
+                  size='small'
+                  color='error'
+                  sx={{ my: 2 }}
+                  onClick={() => resetBracket()}
+                  variant='text'
+                  startIcon={<RestartAltIcon />}
+                >
+                  {intl.formatMessage({ id: 'buttons.reset.bracket' })}
+                </Button>
+              </Tooltip>
+            )}
           </Stack>
           <Stack sx={{ flex: 4, flexDirection: 'column', overflow: 'scroll' }}>
             {!!tournamentStore.currentFinalist && 

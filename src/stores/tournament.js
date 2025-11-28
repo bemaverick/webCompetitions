@@ -293,8 +293,8 @@ class TournamentStore {
       ({ participationStatus, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && participationStatus === ATHLETE_STATUS.CHECKED_IN
     );
     const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: MATCH_RESULT.IDLE }}}))
-    this.currentTable.rounds[0].groupA = _.shuffle(groupA); // TODOD check
-    //this.currentTable.rounds[0].groupA = groupA;
+    //this.currentTable.rounds[0].groupA = _.shuffle(groupA); // TODOD check
+    this.currentTable.rounds[0].groupA = groupA;
     
     this.currentTable.selectedRound = 0;
     this.currentRound.groupB = [];
@@ -554,6 +554,20 @@ class TournamentStore {
     this.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
     delete this.postponedCategoriesProgress[this.currentTable.category];
     analytics.logEvent('start_postponed_category');
+  }
+
+  resetBracket = () => {
+    // console.log('reset bracket', this.currentTable,);
+    this.tables[this.currentTableIndex] = {
+      ...TABLE_INITIAL_STATE,
+      state: TABLE_STATE.IN_PROGRESS,
+      category: this.currentTable.category
+    }
+    this.setupFirstRound(this.currentTableIndex);
+    this.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
+    markWinnersChannel.postMessage({ type: 'refresh' });
+    delete this.results[this.currentTable.category];
+    analytics.logEvent(ANALYTICS_EVENTS.RESET_BRACKET);
   }
 
   removeResults = () => {
