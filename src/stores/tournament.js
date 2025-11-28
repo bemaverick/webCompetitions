@@ -186,13 +186,15 @@ class TournamentStore {
         updatedCompetitorsList.push(competitor);
       } else {
         const updatedTournamentCategoryIds = competitor.tournamentCategoryIds.filter(id => id !== tournamentCategoryId);
-        if (updatedTournamentCategoryIds.length) {
+        // if (updatedTournamentCategoryIds.length) { // TODO check
           updatedCompetitorsList.push({ ...competitor, tournamentCategoryIds: updatedTournamentCategoryIds});
-        }
+        // }
       }
     });
     this.competitorsList = updatedCompetitorsList; 
     delete this.newTournamentCategories[tournamentCategoryId];
+    delete this.results[tournamentCategoryId];
+    delete this.postponedCategoriesProgress[tournamentCategoryId];
     analytics.logEvent('remove_category');
   }
 

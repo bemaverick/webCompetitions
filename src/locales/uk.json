@@ -58,7 +58,7 @@
   "message.athlete.checkedIn": "Статус учасника оновлено: зареєстрований",
   "error.tablesCount.change": "Неможливо зменшити кількість столів, бо вже тривають поєдинки.",
   "error.selectedCategory.change.noCompetitors": "Категорія пуста. Обери іншу, або додай учасників",
-  "error.selectedCategory.inProgress.remove": "Ви не можете видалити категорію, якщо поєдинки вже розпочались або завершились.",
+  "error.selectedCategory.inProgress.remove": "Неможливо видалити категорію під час поєдинків. Спершу призупиніть або завершіть їх.",
   "error.athlete.exist": "Учасник із такими даними вже існує",
   "error.category.matches.minAmount": "У категорії замало учасників. Для старту потрібно щонайменше двоє",
   "warning.category.remove.confirmationModal1": "Ви впевнені, що хочете видалити цю категорію?",
