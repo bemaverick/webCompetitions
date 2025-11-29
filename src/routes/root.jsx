@@ -32,7 +32,7 @@ import { systemStore } from "../stores/systemStore";
 import { tournamentStore } from "../stores/tournament";
 import { fromUnixTime, format } from 'date-fns';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
-import { firestoreDB } from "../firebase";
+import { firestoreDB, firestoreTournamentsPath } from "../firebase";
 import { CATEGORY_STATE } from "../constants/tournamenConfig";
 import { wait } from "../utils/common";
 import { Copyright } from "./SignIn";
@@ -91,7 +91,7 @@ const drawerItems = [
 ]
 
 //const tournamentsRef = collection(firestoreDB, "armGrid_tournaments");
-const tournamentsRef = collection(firestoreDB, "Arm_Grid_tournaments"); //prod;
+const tournamentsRef = collection(firestoreDB, firestoreTournamentsPath); //prod;
 
 
 

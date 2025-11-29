@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Grid from '@mui/material/Grid';
-import { Button, MenuItem, Modal, FormControl, Select, InputLabel, Box, OutlinedInput, FormGroup, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
+import { Button, MenuItem, Modal, FormControl, Select, InputLabel, Box, OutlinedInput, FormHelperText, List, FormControlLabel, Checkbox, ListItem, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useIntl } from 'react-intl';
@@ -33,6 +33,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
   const [weight, setWeight] = React.useState(props.competitor?.weight);
   const [participationStatus, setParticipationStatus] = React.useState(props.competitor?.participationStatus);
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState(props.competitor?.tournamentCategoryIds || []);
+  const [validationErrors, showValidationErrors] = React.useState(false);
   // const [checkboxes, setCheckboxes] = React.useState({
   //   present: !!props.competitor?.present,
   // });
@@ -51,6 +52,11 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
 
 
   const onSave = () => {
+    if (!firstName || !lastName || !selectedCategoryIds.length) {
+      showValidationErrors(true);
+      return;
+    }
+
     props.onEdit({
       firstName, 
       lastName,
@@ -59,6 +65,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
       id: props.competitor.id,
       participationStatus,
     });
+    showValidationErrors(false);
     setFirstName('');
     setLastName('');
     setWeight('');
@@ -78,6 +85,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
         <Grid container spacing={1}>
           <Grid item xs={2}>
             <TextField
+              required
               fullWidth
               size='small'
               onChange={(event) => {
@@ -88,10 +96,13 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               label={intl.formatMessage({ id: 'common.firstName' })}
               variant="outlined"
               value={firstName}
+              helperText={validationErrors && intl.formatMessage({ id: 'validation.commong.required'})}
+              error={validationErrors && !firstName}
             />
           </Grid>
           <Grid item xs={2}>
             <TextField
+              required
               fullWidth
               size='small'
               onChange={(event) => {
@@ -102,10 +113,12 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               label={intl.formatMessage({ id: 'common.lastName' })}
               variant="outlined"
               value={lastName}
+              helperText={validationErrors && intl.formatMessage({ id: 'validation.commong.required'})}
+              error={validationErrors && !lastName}
             />
           </Grid>
           <Grid item xs={5}>
-            <FormControl size="small" fullWidth margin='normal'>
+            <FormControl required size="small" fullWidth margin='normal'>
               <InputLabel id="demo-simple-select-label">
                 {intl.formatMessage({ id: 'common.categories' })}
               </InputLabel>
@@ -118,6 +131,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
                 input={<OutlinedInput  label={intl.formatMessage({ id: 'common.categories' })} />}
                 renderValue={(selected) => selected.map((id) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[id].config, 'full')).join(', ')}
                 MenuProps={MenuProps}
+                error={validationErrors && !selectedCategoryIds.length}
               >
                 {Object.values(tournamentStore.newTournamentCategories).map((category) => (
                   <MenuItem
@@ -131,6 +145,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
                   </MenuItem>
                 ))}
               </Select>
+              {validationErrors && !selectedCategoryIds.length && <FormHelperText error>{intl.formatMessage({ id: 'validation.commong.required'})}</FormHelperText>}
             </FormControl>
           </Grid>
           <Grid item xs={1}>
@@ -138,11 +153,12 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               size='small'
               fullWidth
               onChange={(event) => {
-             //   const regex = /^[0-9\b]+$/;
-                // if value is not blank, then test the regex
-            //    if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
+              //  const regex = /^[0-9\b]+$/;
+                const regex = /^(?:[1-9]\d{0,2}(?:\.\d{0,2})?|0?\.\d{0,2})?$/;
+              //  if value is not blank, then test the regex
+                if (event.target.value === '' || (regex.test(event.target.value) && event.target.value[0] !== '0')) {
                   setWeight(event.target.value)
-              //  }
+                }
               }}
               margin="normal"
               id="outlined-basic"
@@ -151,7 +167,7 @@ export const EditCompetitorModal = observer((props: EditCompetitorModalProps): a
               value={weight}
             />
           </Grid>
-          <Grid item xs={2} sx={{ display: 'flex', alignItems: 'center',  justifyContent: 'center'}}>
+          <Grid item xs={2} sx={{ display: 'flex' }}>
             <FormControl size="small" fullWidth margin='normal'>
               <InputLabel id="demo-simple-select-label">{intl.formatMessage({ id: 'common.athlete.participation.status' })}</InputLabel>
               <Select

@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "deploy-prod-firebase": "node_modules/.bin/firebase deploy --only hosting",
     "deploy-stage-channel": "node_modules/.bin/firebase hosting:channel:deploy stage --expires 2d",
+    "show-firebase-channels": "node_modules/.bin/firebase hosting:channel:lists stage",
     "start-emulators:": "node_modules/.bin/firebase emulators:start"
   },
   "dependencies": {

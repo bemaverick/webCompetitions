@@ -2,6 +2,7 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import PropTypes from 'prop-types';
+import _ from 'lodash';
 import Tabs from '@mui/material/Tabs';
 import Button from '@mui/material/Button';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
@@ -14,7 +15,9 @@ import CastIcon from '@mui/icons-material/Cast';
 import { styled } from "@mui/material/styles";
 import List from '@mui/material/List';
 import Tooltip from '@mui/material/Tooltip';
-
+import ShuffleIcon from '@mui/icons-material/Shuffle';
+import PauseIcon from '@mui/icons-material/Pause';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItem from '@mui/material/ListItem';
@@ -31,11 +34,11 @@ import { toJS  } from 'mobx';
 import { ConfirmProvider, useConfirm } from "material-ui-confirm";
 import { useIntl } from 'react-intl'
 import { generateTournamentCategoryTitle } from '../utils/categoriesUtils';
-import { CATEGORY_STATE, TABLE_STATE } from '../constants/tournamenConfig';
+import { CATEGORY_STATE, TABLE_STATE, ATHLETE_STATUS, MATCH_RESULT } from '../constants/tournamenConfig';
 import { systemStore } from '../stores/systemStore';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { useCollectionDataOnce, useCollectionOnce } from 'react-firebase-hooks/firestore';
-import { firebaseApp } from '../firebase';
+import { firebaseApp, firestoreTournamentsPath } from '../firebase';
 import LinearProgress from '@mui/material/LinearProgress';
 import { auth } from '../contexts/AuthContext';
 import { ResultsByCategories } from '../components/ResultsByCategories';
@@ -49,7 +52,7 @@ function TabPanel(props) {
   const intl = useIntl();
   const { tournamentId, tournament } = props;
     const [tournamentsSnapshot, loading, error] = useCollectionOnce(
-    collection(getFirestore(firebaseApp), `armGrid_tournaments/${tournamentId}/results`),
+    collection(getFirestore(firebaseApp), `${firestoreTournamentsPath}/${tournamentId}/results`),
     {
       snapshotListenOptions: { includeMetadataChanges: false },
     }
@@ -122,7 +125,7 @@ const TournamentList = observer(() => {
   const auth = useAuth();
   const [value, setValue] = React.useState(0);
   const tournamentCollectionRef = query(
-    collection(getFirestore(firebaseApp), 'armGrid_tournaments'),
+    collection(getFirestore(firebaseApp), firestoreTournamentsPath),
     where("user.uid", "==", auth.user.uid)
   );
 
@@ -246,16 +249,50 @@ const CREATE_CATEGORY_SELECTOR_VAL = 'CREATE_CATEGORY_SELECTOR_VAL';
 const TableContent = observer((props) => {
   const intl = useIntl();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const currentTableIndex = tournamentStore.currentTableIndex;
   const currentTable = tournamentStore.currentTable;
   const currentTableState = currentTable.state; // idle, started, or finished;
   const isFinalsAvailable = !!Object.keys(tournamentStore.postponedCategoriesProgress).length;
 
-  const startMatches = () => {
+
+  const runMatches = () => {
+    const actualCategory = tournamentStore.competitorsList.filter(
+      ({ participationStatus, tournamentCategoryIds }) => tournamentCategoryIds.includes(currentTable.category) && participationStatus === ATHLETE_STATUS.CHECKED_IN
+    );
+    if (actualCategory.length < 2) {
+      systemStore.displaySnackbar(true, 'error.category.matches.minAmount')
+      return;
+    }
+
+    tournamentStore.setTableStatus(currentTableIndex, TABLE_STATE.IN_PROGRESS);
+    tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
     markWinnersChannel.postMessage({ type: 'refresh' });
-    if (currentTable.category) {
-      tournamentStore.setTableStatus(currentTableIndex, TABLE_STATE.IN_PROGRESS);
-      tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
+  }
+  const startMatches = async () => {
+    try {
+      if (currentTable.category) {
+        const categoryHasUncheckedParticipants = tournamentStore.competitorsList.some(
+          ({ participationStatus, tournamentCategoryIds }) => {
+            return tournamentCategoryIds.includes(currentTable.category) && participationStatus !== ATHLETE_STATUS.CHECKED_IN
+          }
+        );
+        if (categoryHasUncheckedParticipants) {
+          await confirm({
+            title: intl.formatMessage({ id: 'warning.category.athletes.containUnchecked' }),
+            description: intl.formatMessage({ id: 'warning.category.athletes.containUnchecked.explanation' }),
+            confirmationText: intl.formatMessage({ id: 'buttons.confirm.startAnyway' }),
+            cancellationText: intl.formatMessage({ id: 'buttons.cancel' }),
+            confirmationButtonProps: { color: 'error' },
+          });
+          runMatches();
+        } 
+        if (!categoryHasUncheckedParticipants) {
+          runMatches();
+        }
+      }
+    } catch (error) {
+      console.log('user canceled', error)
     }
   }
 
@@ -274,7 +311,7 @@ const TableContent = observer((props) => {
     tournamentStore.setTableCategory(currentTableIndex, categoryId);
   }
 
-  if (currentTableState === 'idle') {
+  if (currentTableState === TABLE_STATE.IDLE) {
     return (
       <Stack sx={{ flex: 1, pb: 4, justifyContent: 'center',  alignItems: 'center' }}>
         <Box sx={{ width: '35%', display: 'flex', flexDirection: 'column',  alignItems: 'center' }}>
@@ -327,7 +364,7 @@ const TableContent = observer((props) => {
           <Button
             sx={{ mt: 2, mb: 3, }}
             onClick={startMatches}
-            variant='outlined'
+            variant='contained'
           >
             {intl.formatMessage({ id: 'common.startMatches' })}
           </Button>
@@ -366,58 +403,39 @@ const TableContent = observer((props) => {
                   tournamentStore.startPostponedCategories(currentTableIndex);
                   markWinnersChannel.postMessage({ type: 'refresh' });
                 }}
-                variant='outlined'
+                variant='contained'
               >
-                  {intl.formatMessage({ id: 'common.resumeMatches' })}
-                </Button>
+                {intl.formatMessage({ id: 'common.resumeMatches' })}
+              </Button>
             </>
           )}
         </Box>
       </Stack>
     )
   }
-  if (currentTableState === 'finished1') {
-    return (
-      <>
-        <Stack sx={{ flexGrow: 1, border: '0px solid pink', overflow: 'scroll' }}>
-          <Grid container justifyContent={'center'}>
-            <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', p: 2, justifyContent: 'center' }}>
-                <Button
-                  onClick={() => tournamentStore.setTableStatus(currentTableIndex, 'idle')}
-                  type='outlined'
-                >
-                  Розпочати нову категорію
-                </Button>
-              </Box>
-              <Typography
-                textAlign={'center'}
-                component="h6"
-                variant="h6"
-                gutterBottom
-              >
-                "{tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].categoryTitleFull}"
-              </Typography> 
-              <Box>
-                {tournamentStore.results[tournamentStore.currentTable.category].map((competitor, index) => (
-                  <Typography
-                    key={competitor.id}
-                    component="p"
-                    variant="body1"
-                  >
-                    {`${index + 1}.${competitor.firstName} ${competitor.lastName}`}
-                    </Typography> 
-                ))}
-              </Box>
-            </Grid>
-          </Grid>
-        </Stack>
-      </>
-    )
-  }
+
   if (currentTableState === TABLE_STATE.IN_PROGRESS || currentTableState === TABLE_STATE.FINISHED) {
     const currentRoundIndex = tournamentStore.currentRoundIndex;
     const nextRoundButtonVisible = currentRoundIndex === Object.keys(currentTable.rounds).length - 1; // if round finished, button not visible;
+
+    // // if round finished, button not visible;
+    // const numberOfRounds = Object.keys(currentTable.rounds).length;
+    // // TODO check it
+    // let nextRoundButtonVisible1 = currentRoundIndex === numberOfRounds - 1; 
+
+    // try {
+    //   nextRoundButtonVisible1 = currentRoundIndex === numberOfRounds - 1
+    //     || (currentTable.rounds[numberOfRounds - 1].groupA.every(competitor => competitor.stats[numberOfRounds - 1].result === MATCH_RESULT.IDLE) 
+    //       && currentTable.rounds[numberOfRounds - 1].groupB.every(competitor => competitor.stats[numberOfRounds - 1].result === MATCH_RESULT.IDLE)
+    //       && currentRoundIndex === numberOfRounds - 2 // means previous round
+    //     );
+    // } catch (error) {
+      
+    // }
+    
+
+   // console.log('nextRoundButtonVisible1', nextRoundButtonVisible1, currentTable.rounds[numberOfRounds - 1].groupA);
+
     const notAllPairsCompleted = tournamentStore.currentGroupA.some(({ stats }) => stats[currentRoundIndex].result === 'idle')
     || tournamentStore.currentGroupB.some(({ stats }) => stats[currentRoundIndex].result === 'idle');
     const isLastRound = tournamentStore.currentGroupA.length === 2 // kind of crunch
@@ -435,6 +453,33 @@ const TableContent = observer((props) => {
 
     //const categoryLabel= `${intl.formatMessage({ id: 'common.category' })} ${tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].categoryTitleFull}`
     const categoryLabel= generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentStore.currentTable.category].config, 'full')
+
+    let shuffleButtonVisible = false;
+    try {
+      shuffleButtonVisible = currentTableState === TABLE_STATE.IN_PROGRESS
+        && Object.keys(currentTable.rounds).length === 1
+        && currentTable.rounds[0].groupA.every(competitor => competitor.stats[0].result === MATCH_RESULT.IDLE);
+    } catch (error) {
+      console.log('shuffleButtonVisibility calculation', error);
+    }
+
+    const resetBracketVisible = true;
+
+    const resetBracket = async () => {
+      try {
+        
+        await confirm({
+          title: intl.formatMessage({ id: 'warning.reset.bracket.confirmationModal1' }),
+          description: intl.formatMessage({ id: 'warning.reset.bracket.confirmationModal2' }),
+          confirmationText: intl.formatMessage({ id: 'buttons.reset.bracket.confirm' }),
+          cancellationText: intl.formatMessage({ id: 'buttons.cancel' }),
+          confirmationButtonProps: { color: 'error' },
+        });
+        tournamentStore.resetBracket();
+      } catch (error) {
+        
+      }
+    }
 
     return (
       <>
@@ -455,32 +500,66 @@ const TableContent = observer((props) => {
           ))}
         </Breadcrumbs>
 
-        <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden' }}>
-          <Stack sx={{ flex: 4 }}>
+        <Stack sx={{ flexDirection: 'row', flexGrow: 1, overflow: 'hidden', }}>
+          <Stack sx={{ flex: 4, border: '0px solid black', overflow: 'scroll', alignItems: 'center', justifyContent: 'space-between'}}>
+
             <Box sx={{
-              display: 'flex', flexDirection: 'column', pb: 2, pt: 2, px: 1, alignItems: 'center', justifyContent: 'center'
+              display: 'flex', flexDirection: 'column', pb: 2, pt: 2, px: 1, alignItems: 'center',   border: '0px solid green'
               }}
             >
               <Typography variant='h6' textAlign={'center'} pb={2}>
                 {categoryLabel}
               </Typography>
-              <Button
-                onClick={() => {
-                  tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.PAUSED);
-                  tournamentStore.saveCategoryProgress();
-                  markWinnersChannel.postMessage({ type: 'refresh' });
-                //  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
-
-                }}
-                variant='contained'
-                disabled={!nextRoundButtonVisible || isLastRound}
+              <Tooltip
+                title={intl.formatMessage({ id: 'hint.categoryContinueLater' })}
               >
-                {intl.formatMessage({ id: 'buttons.action.pause.category' })}
-              </Button>
-              <Typography variant='body2' textAlign={'center'} pt={2} color='#696969db'>
+                <Button
+                  startIcon={<PauseIcon />}
+                  onClick={() => {
+                    tournamentStore.setTournamentCategoryStatus(CATEGORY_STATE.PAUSED);
+                    tournamentStore.saveCategoryProgress();
+                    markWinnersChannel.postMessage({ type: 'refresh' });
+                  //  tournamentStore.setTableStatus(tournamentStore.currentTableIndex, 'idle');
+                  }}
+                  variant='outlined'
+                  disabled={!nextRoundButtonVisible || isLastRound}
+                >
+                  {intl.formatMessage({ id: 'buttons.action.pause.category' })}
+                </Button>
+              </Tooltip>
+              {shuffleButtonVisible && (
+                <Tooltip title={intl.formatMessage({ id: 'hint.shuffle.particiopants' })}>
+                  <Button
+                    color='secondary'
+                    sx={{ mt: 2 }}
+                    onClick={() => tournamentStore.shuffleCategoryCompetitors()}
+                    variant='outlined'
+                    endIcon={<ShuffleIcon />}
+                  >
+                    {intl.formatMessage({ id: 'buttons.shuffle.participants' })}
+                  </Button>
+                </Tooltip>
+              )}
+    
+
+              {/* <Typography variant='body2' textAlign={'center'} pt={2} color='#696969db'>
                 {intl.formatMessage({ id: 'hint.categoryContinueLater' })}
-              </Typography>
+              </Typography> */}
             </Box>
+            {resetBracketVisible && (
+              <Tooltip title={intl.formatMessage({ id: 'warning.reset.bracket' })}>
+                <Button
+                  size='small'
+                  color='error'
+                  sx={{ my: 2 }}
+                  onClick={() => resetBracket()}
+                  variant='text'
+                  startIcon={<RestartAltIcon />}
+                >
+                  {intl.formatMessage({ id: 'buttons.reset.bracket' })}
+                </Button>
+              </Tooltip>
+            )}
           </Stack>
           <Stack sx={{ flex: 4, flexDirection: 'column', overflow: 'scroll' }}>
             {!!tournamentStore.currentFinalist && 
@@ -544,19 +623,22 @@ const TableContent = observer((props) => {
                   {intl.formatMessage({ id: "buttons.open.streamTable" })}
                 </Button>
               </Tooltip>
-
-              <Typography gutterBottom variant="h6" component="div">
-                {intl.formatMessage({ id: 'common.currentResults' })}
-              </Typography>
-              {tournamentStore.results[tournamentStore.currentTable.category]?.map((competitor, index) => (
-                <Typography
-                  key={competitor?.id || index}
-                  component="p"
-                  variant="subtitle1"
-                >
-                  {competitor ? `${index + 1}. ${competitor.lastName} ${competitor.firstName}` : `${index + 1}.`}
-                </Typography> 
-              ))}
+              {!!_.compact(tournamentStore.results[tournamentStore.currentTable.category]).length && (
+                <>
+                  <Typography gutterBottom variant="h6" component="div">
+                    {intl.formatMessage({ id: 'common.currentResults' })}
+                  </Typography>
+                  {tournamentStore.results[tournamentStore.currentTable.category]?.map((competitor, index) => (
+                    <Typography
+                      key={competitor?.id || index}
+                      component="p"
+                      variant="subtitle1"
+                    >
+                      {competitor ? `${index + 1}. ${competitor.lastName} ${competitor.firstName}` : `${index + 1}.`}
+                    </Typography> 
+                  ))}
+                </>
+              )}
             </Box>
           </Stack>
         </Stack>
