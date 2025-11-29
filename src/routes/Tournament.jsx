@@ -417,6 +417,25 @@ const TableContent = observer((props) => {
   if (currentTableState === TABLE_STATE.IN_PROGRESS || currentTableState === TABLE_STATE.FINISHED) {
     const currentRoundIndex = tournamentStore.currentRoundIndex;
     const nextRoundButtonVisible = currentRoundIndex === Object.keys(currentTable.rounds).length - 1; // if round finished, button not visible;
+
+    // // if round finished, button not visible;
+    // const numberOfRounds = Object.keys(currentTable.rounds).length;
+    // // TODO check it
+    // let nextRoundButtonVisible1 = currentRoundIndex === numberOfRounds - 1; 
+
+    // try {
+    //   nextRoundButtonVisible1 = currentRoundIndex === numberOfRounds - 1
+    //     || (currentTable.rounds[numberOfRounds - 1].groupA.every(competitor => competitor.stats[numberOfRounds - 1].result === MATCH_RESULT.IDLE) 
+    //       && currentTable.rounds[numberOfRounds - 1].groupB.every(competitor => competitor.stats[numberOfRounds - 1].result === MATCH_RESULT.IDLE)
+    //       && currentRoundIndex === numberOfRounds - 2 // means previous round
+    //     );
+    // } catch (error) {
+      
+    // }
+    
+
+   // console.log('nextRoundButtonVisible1', nextRoundButtonVisible1, currentTable.rounds[numberOfRounds - 1].groupA);
+
     const notAllPairsCompleted = tournamentStore.currentGroupA.some(({ stats }) => stats[currentRoundIndex].result === 'idle')
     || tournamentStore.currentGroupB.some(({ stats }) => stats[currentRoundIndex].result === 'idle');
     const isLastRound = tournamentStore.currentGroupA.length === 2 // kind of crunch

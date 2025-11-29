@@ -460,10 +460,19 @@ class TournamentStore {
       this.setTournamentCategoryStatus(CATEGORY_STATE.FINISHED);
       this.setTableStatus(this.currentTableIndex, TABLE_STATE.FINISHED);
       finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));       
+      
+      // if (this.currentRoundIndex + 1 === Object.keys(this.currentTable.rounds).length - 1) {
+      //   console.log('here - need to remove duplications',);
+      //   this.undoRoundResults(finishedGroup);
+      // }   
       this.logRoundResults(finishedGroup);                       
       return;
     }
 
+    // if (this.currentRoundIndex + 1 === Object.keys(this.currentTable.rounds).length - 1) {
+    //   console.log('here - need to remove duplications',);
+    //   this.undoRoundResults(finishedGroup);
+    // }
      this.logRoundResults(finishedGroup);
      this.currentTable.rounds[nextRoundIndex] = { groupA: newRoundGroupA, groupB: newRoundGroupB, finalist: finalist, semifinalist: semifinalist };
      this.currentTable.selectedRound = nextRoundIndex;
@@ -512,6 +521,18 @@ class TournamentStore {
     }
   }
   
+
+  undoRoundResults = (finishedGroup) => {
+    markWinnersChannel.postMessage({ type: 'refresh' });
+    const length = finishedGroup.length;
+    if (length && this.results[this.currentTable.category]) {
+      const firstCompetitorIndex = this.results[this.currentTable.category].findIndex((competitor) => !!competitor);
+      console.log('undoRoundResults', finishedGroup, firstCompetitorIndex)
+      this.results[this.currentTable.category] = this.results[this.currentTable.category].map(
+        (el, index) => index < firstCompetitorIndex + length ? null : el
+      );
+    }
+  }
 
   logRoundResults = (finishedGroup) => {
     const competitorsCount = this.currentTable.rounds[0].groupA.length;

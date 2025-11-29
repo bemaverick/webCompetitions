@@ -879,6 +879,7 @@ export default observer(function TableStream() {
             firstCompetitor={currentFirstCompetitor}
             secondCompetitor={currentSecondCompetitor}
             type={'current'}
+            status={currentMatchStatus}
           ></Pair>
           
         </Box>
@@ -921,9 +922,9 @@ const chipVariant = {
 const Pair = (props) => {
   const intl = useIntl();
   let { type, firstCompetitor, secondCompetitor, status } = props;
-   console.log('Pair', firstCompetitor, secondCompetitor)
-  let firstCompetitorName = 'John Brzenk';
-  let secondCompetitorName = 'Devon Larrat'|| secondCompetitor;
+   console.log('Pair', firstCompetitor, secondCompetitor, status, type)
+  let firstCompetitorName = '';
+  let secondCompetitorName = ''|| secondCompetitor;
 
   if (firstCompetitor?.firstName && firstCompetitor?.lastName) {
     firstCompetitorName = `${firstCompetitor.lastName} ${firstCompetitor.firstName}`
@@ -942,6 +943,13 @@ const Pair = (props) => {
     secondCompetitorName = intl.formatMessage({ id: 'common.matches.opponentInProgress' });
   }
 
+  if (status === MATCH_STATE.CATEGORY_FINISHED || (status === MATCH_STATE.FINAl && !firstCompetitor && !secondCompetitor)) {
+    return (
+      <Typography variant="h5" sx={{ my: 1, textAlign: 'center' }}>
+        {intl.formatMessage({ id: 'common.category.finished.title' })}
+      </Typography>
+    )
+  }
 
   return (
     <Box>

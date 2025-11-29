@@ -135,6 +135,7 @@
   "common.matches.current": "Current Match",
   "common.matches.next": "Next Match",
   "common.matches.opponentInProgress": "To Be Determined", 
+  "common.category.finished.title": "Category Completed",
   "tables.count.one": "1 table",
   "tables.count.two": "2 tables",
   "tables.count.three": "3 tables",
