@@ -216,6 +216,16 @@ export default observer(function Tournament() {
     tournamentStore.setCurrentTableIndex(newValue);
   };
 
+  const getTournamentTableTitle = (table, index) => {
+    const categoryId = table.category;
+    const tableTitle = `${intl.formatMessage({ id: "common.table" })} ${index + 1}`;
+    if (table.state === TABLE_STATE.IDLE) {
+      return `${intl.formatMessage({ id: "common.table" })} ${index + 1}`
+    } 
+    const tournamentCategory = tournamentStore.newTournamentCategories[categoryId];
+    return  `${tableTitle} (${generateTournamentCategoryTitle(intl, tournamentCategory.config)})`;
+  };
+
   return (
     <Stack sx={{ height: '100vh' }}>
       <Toolbar />
@@ -229,10 +239,10 @@ export default observer(function Tournament() {
             centered
           >
             
-            {Object.keys(tournamentStore.tables).map((table, index) => (
+            {Object.entries(tournamentStore.tables).map(([_, table], index) => (
               <Tab
                 key={index}
-                label={`${intl.formatMessage({ id: "common.table" })} ${index + 1}`}
+                label={getTournamentTableTitle(table, index)}
               />
             ))}
           </Tabs>
@@ -887,4 +897,3 @@ const Competitor = ({ competitor, type }) => {
 
   )
 }
-
