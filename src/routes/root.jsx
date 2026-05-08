@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLoaderData, Form, redirect, useNavigation, } from "react-router-dom";
 import { getContacts, createContact } from "../contacts";
 import Snackbar from '@mui/material/Snackbar';
-import { Button, CircularProgress, Link } from "@mui/material";
+import { Alert, Button, CircularProgress, Link } from "@mui/material";
 import { auth, useAuth } from '../contexts/AuthContext';
 import * as React from 'react';
 import Box from '@mui/material/Box';
@@ -143,7 +143,8 @@ const saveResults = async (results) => {
     analytics.logEvent('save_results_success');
   } catch (error) {
     analytics.logEvent('save_results_errors');
-    console.log('error', error)
+    console.log('error', error);
+    throw error;
   }
 };
 export default observer(function Root() {
@@ -201,6 +202,7 @@ export default observer(function Root() {
         tournamentStore.resetStore();
         navigate('/');
       } catch (error) {
+        alert('Oops. Something went wrong. Please upload the results as a PDF file to prevent losing data, or contact the developer.');
         conole.log('cancel', error);
       } finally {
         setLoading(false);

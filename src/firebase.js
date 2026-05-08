@@ -21,5 +21,13 @@ const firebaseConfig = {
 // Initialize Firebase
 export const firebaseApp = initializeApp(firebaseConfig);
 export const firestoreDB = getFirestore(firebaseApp);
-export const firestoreTournamentsPath = 'armGrid_tournaments';
-//export const firestoreTournamentsPath = 'Arm_Grid_tournaments'; // production
+// let firestoreTournamentsPath = 'armGrid_tournaments';
+let firestoreTournamentsPath = 'Arm_Grid_tournaments'; // production
+
+if (import.meta.env.MODE === 'development') {
+  // logic for dev mode
+  firestoreTournamentsPath = '_DEV_' + firestoreTournamentsPath;
+  console.log('dev');
+}
+
+export { firestoreTournamentsPath };

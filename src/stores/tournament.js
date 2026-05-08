@@ -1,6 +1,6 @@
 // store.js
 
-import { makeAutoObservable, autorun, toJS } from 'mobx';
+import { makeAutoObservable, autorun, toJS, runInAction } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
@@ -9,7 +9,9 @@ import { createTournamentCategoryConfig, generateTournamentCategoryTitle, getCat
 import { fromUnixTime, format } from 'date-fns';
 import { getIntl } from '../routes/App';
 import { analytics, ANALYTICS_EVENTS } from '../services/analytics';
+import { updateTournament } from '../services/tournaments';
 import { markWinnersChannel } from '../routes/Tournament';
+import { systemStore } from './systemStore';
 // import { intl } from '../routes/App';
 
 class TournamentStore {
@@ -21,6 +23,7 @@ class TournamentStore {
       {
         name: 'TournamentStore',
         properties: [
+          // 'currentTournamentId',
           'tournamentName',
           'tournamentDate',
           'tablesCount',
@@ -41,6 +44,10 @@ class TournamentStore {
   }
 
   weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
+
+  currentTournamentId = '';
+
+  isApplyingTournamentBasicSettings = false;
 
   tournamentName = '';
 
@@ -86,6 +93,56 @@ class TournamentStore {
     this.weightUnit = weightUnit;
     analytics.logEvent('apply_tournament_settings');
   }
+
+  applyTournamentBasicSettings = async ({
+    userId,
+    tournamentName,
+    tournamentDate,
+    tablesCount,
+    weightCategories,
+    classificationCategories,
+    weightUnit,
+  }) => {
+    runInAction(() => {
+      this.isApplyingTournamentBasicSettings = true;
+    });
+
+    try {
+      if (this.currentTournamentId) {
+        await updateTournament({
+          tournamentId: this.currentTournamentId,
+          userId,
+          tournamentName,
+          tournamentDate,
+          tablesCount,
+          weightUnit: weightUnit.value,
+        });
+      }
+
+      runInAction(() => {
+        this.setTournamentBasicSettings({
+          tournamentName,
+          tournamentDate,
+          tablesCount,
+          weightCategories,
+          classificationCategories,
+          weightUnit,
+        });
+      });
+      systemStore.displaySnackbar(true, 'common.changesApplied', 'success');
+
+    } catch(e) {
+      console.log('error', e);
+    } finally {
+      runInAction(() => {
+        this.isApplyingTournamentBasicSettings = false;
+      });
+    }
+  }
+
+  // setCurrentTournamentId = (tournamentId) => {
+  //   this.currentTournamentId = tournamentId;
+  // }
 
   setTablesConfig = (tablesCount) => {
     this.tablesCount = tablesCount;  
@@ -596,6 +653,8 @@ class TournamentStore {
   }
 
   resetStore = () => {
+    this.currentTournamentId = '';
+    this.isApplyingTournamentBasicSettings = false;
     this.weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
     this.tournamentName = '';
     this.tournamentDate = Date.now();
