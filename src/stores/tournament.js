@@ -1,6 +1,6 @@
 // store.js
 
-import { makeAutoObservable, autorun, toJS } from 'mobx';
+import { makeAutoObservable, autorun, toJS, runInAction } from 'mobx';
 import { v4 as uuidv4 } from 'uuid';
 import _, { findLast } from 'lodash';
 import { makePersistable } from 'mobx-persist-store';
@@ -8,8 +8,10 @@ import { ATHLETE_STATUS, ATHLETES_LIST_SOURCE, CATEGORY_STATE, CLASSIFICATION_LI
 import { createTournamentCategoryConfig, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
 import { fromUnixTime, format } from 'date-fns';
 import { getIntl } from '../routes/App';
-import { analytics } from '../services/analytics';
+import { analytics, ANALYTICS_EVENTS } from '../services/analytics';
+import { updateTournament } from '../services/tournaments';
 import { markWinnersChannel } from '../routes/Tournament';
+import { systemStore } from './systemStore';
 // import { intl } from '../routes/App';
 
 class TournamentStore {
@@ -21,6 +23,7 @@ class TournamentStore {
       {
         name: 'TournamentStore',
         properties: [
+          // 'currentTournamentId',
           'tournamentName',
           'tournamentDate',
           'tablesCount',
@@ -41,6 +44,10 @@ class TournamentStore {
   }
 
   weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
+
+  currentTournamentId = '';
+
+  isApplyingTournamentBasicSettings = false;
 
   tournamentName = '';
 
@@ -86,6 +93,56 @@ class TournamentStore {
     this.weightUnit = weightUnit;
     analytics.logEvent('apply_tournament_settings');
   }
+
+  applyTournamentBasicSettings = async ({
+    userId,
+    tournamentName,
+    tournamentDate,
+    tablesCount,
+    weightCategories,
+    classificationCategories,
+    weightUnit,
+  }) => {
+    runInAction(() => {
+      this.isApplyingTournamentBasicSettings = true;
+    });
+
+    try {
+      if (this.currentTournamentId) {
+        await updateTournament({
+          tournamentId: this.currentTournamentId,
+          userId,
+          tournamentName,
+          tournamentDate,
+          tablesCount,
+          weightUnit: weightUnit.value,
+        });
+      }
+
+      runInAction(() => {
+        this.setTournamentBasicSettings({
+          tournamentName,
+          tournamentDate,
+          tablesCount,
+          weightCategories,
+          classificationCategories,
+          weightUnit,
+        });
+      });
+      systemStore.displaySnackbar(true, 'common.changesApplied', 'success');
+
+    } catch(e) {
+      console.log('error', e);
+    } finally {
+      runInAction(() => {
+        this.isApplyingTournamentBasicSettings = false;
+      });
+    }
+  }
+
+  // setCurrentTournamentId = (tournamentId) => {
+  //   this.currentTournamentId = tournamentId;
+  // }
 
   setTablesConfig = (tablesCount) => {
     this.tablesCount = tablesCount;  
@@ -186,13 +243,15 @@ class TournamentStore {
         updatedCompetitorsList.push(competitor);
       } else {
         const updatedTournamentCategoryIds = competitor.tournamentCategoryIds.filter(id => id !== tournamentCategoryId);
-        if (updatedTournamentCategoryIds.length) {
+        // if (updatedTournamentCategoryIds.length) { // TODO check
           updatedCompetitorsList.push({ ...competitor, tournamentCategoryIds: updatedTournamentCategoryIds});
-        }
+        // }
       }
     });
     this.competitorsList = updatedCompetitorsList; 
     delete this.newTournamentCategories[tournamentCategoryId];
+    delete this.results[tournamentCategoryId];
+    delete this.postponedCategoriesProgress[tournamentCategoryId];
     analytics.logEvent('remove_category');
   }
 
@@ -259,6 +318,8 @@ class TournamentStore {
 
   shuffleCategoryCompetitors = () => {
     this.currentTable.rounds[0].groupA = _.shuffle(this.currentTable.rounds[0].groupA);
+    analytics.logEvent(ANALYTICS_EVENTS.PRESS_SHUFFLE_COMPETITORS);
+    markWinnersChannel.postMessage({ type: 'refresh' });
   }
 
   setTableCategory = (tableId, category) => {
@@ -289,8 +350,8 @@ class TournamentStore {
       ({ participationStatus, tournamentCategoryIds }) => tournamentCategoryIds.includes(this.currentTable.category) && participationStatus === ATHLETE_STATUS.CHECKED_IN
     );
     const groupA = actualCategory.map((competitor) => ({ ...competitor, stats: { 0: { result: MATCH_RESULT.IDLE }}}))
-    this.currentTable.rounds[0].groupA = _.shuffle(groupA); // TODOD check
-    //this.currentTable.rounds[0].groupA = groupA;
+    //this.currentTable.rounds[0].groupA = _.shuffle(groupA); // TODOD check
+    this.currentTable.rounds[0].groupA = groupA;
     
     this.currentTable.selectedRound = 0;
     this.currentRound.groupB = [];
@@ -456,10 +517,19 @@ class TournamentStore {
       this.setTournamentCategoryStatus(CATEGORY_STATE.FINISHED);
       this.setTableStatus(this.currentTableIndex, TABLE_STATE.FINISHED);
       finishedGroup.unshift( _.cloneDeep(newRoundGroupA[0]));       
+      
+      // if (this.currentRoundIndex + 1 === Object.keys(this.currentTable.rounds).length - 1) {
+      //   console.log('here - need to remove duplications',);
+      //   this.undoRoundResults(finishedGroup);
+      // }   
       this.logRoundResults(finishedGroup);                       
       return;
     }
 
+    // if (this.currentRoundIndex + 1 === Object.keys(this.currentTable.rounds).length - 1) {
+    //   console.log('here - need to remove duplications',);
+    //   this.undoRoundResults(finishedGroup);
+    // }
      this.logRoundResults(finishedGroup);
      this.currentTable.rounds[nextRoundIndex] = { groupA: newRoundGroupA, groupB: newRoundGroupB, finalist: finalist, semifinalist: semifinalist };
      this.currentTable.selectedRound = nextRoundIndex;
@@ -509,6 +579,18 @@ class TournamentStore {
   }
   
 
+  undoRoundResults = (finishedGroup) => {
+    markWinnersChannel.postMessage({ type: 'refresh' });
+    const length = finishedGroup.length;
+    if (length && this.results[this.currentTable.category]) {
+      const firstCompetitorIndex = this.results[this.currentTable.category].findIndex((competitor) => !!competitor);
+      console.log('undoRoundResults', finishedGroup, firstCompetitorIndex)
+      this.results[this.currentTable.category] = this.results[this.currentTable.category].map(
+        (el, index) => index < firstCompetitorIndex + length ? null : el
+      );
+    }
+  }
+
   logRoundResults = (finishedGroup) => {
     const competitorsCount = this.currentTable.rounds[0].groupA.length;
     if (!this.results[this.currentTable.category]) { //means category id;
@@ -552,11 +634,27 @@ class TournamentStore {
     analytics.logEvent('start_postponed_category');
   }
 
+  resetBracket = () => {
+    // console.log('reset bracket', this.currentTable,);
+    this.tables[this.currentTableIndex] = {
+      ...TABLE_INITIAL_STATE,
+      state: TABLE_STATE.IN_PROGRESS,
+      category: this.currentTable.category
+    }
+    this.setupFirstRound(this.currentTableIndex);
+    this.setTournamentCategoryStatus(CATEGORY_STATE.IN_PROGRESS);
+    markWinnersChannel.postMessage({ type: 'refresh' });
+    delete this.results[this.currentTable.category];
+    analytics.logEvent(ANALYTICS_EVENTS.RESET_BRACKET);
+  }
+
   removeResults = () => {
     this.results = {};
   }
 
   resetStore = () => {
+    this.currentTournamentId = '';
+    this.isApplyingTournamentBasicSettings = false;
     this.weightUnit = WEIGHT_UNITS[WEIGHT_UNIT_KG];
     this.tournamentName = '';
     this.tournamentDate = Date.now();

@@ -5,6 +5,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { useConfirm } from "material-ui-confirm";
 import Dialog from '@mui/material/Dialog';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
@@ -40,7 +41,7 @@ import { EditCompetitorModal } from '../components/EditCompetitorModal';
 import InsertLinkIcon from '@mui/icons-material/InsertLink';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useIntl } from 'react-intl';
-import { CATEGORY_OPEN_ID, CATEGORY_STATE } from '../constants/tournamenConfig';
+import { CATEGORY_OPEN_ID, CATEGORY_STATE, ATHLETE_STATUS } from '../constants/tournamenConfig';
 import { categoryChipStyle, categoryStateTranslationsKey, generateTournamentCategoryTitle, getCategoryShortId } from '../utils/categoriesUtils';
 import { systemStore } from '../stores/systemStore';
 import { analytics } from '../services/analytics';
@@ -184,6 +185,7 @@ const CategoryItem = ({ title, subTitle, id, onClick, selected, categoryState })
 }
 
 const CategoryDetailsView = observer((props) => {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const intl = useIntl();
   const [removalConfirmationModal, setRemovalConfirmationModal] = React.useState(false);
@@ -213,17 +215,32 @@ const CategoryDetailsView = observer((props) => {
   }, [props.tournamentCategoryId, tournamentStore.competitorsList, searchQuery]);
   //console.log('categoryCompetitorsList', toJS(categoryCompetitorsList))
 
-  const removeCategory = () => { 
-    setRemovalConfirmationModal(false);
-    const isCategoryAlreadyLaunched = tournamentStore.newTournamentCategories[props.tournamentCategoryId].state !== CATEGORY_STATE.IDLE;
-    if (isCategoryAlreadyLaunched) {
-      systemStore.displaySnackbar(true, 'error.selectedCategory.inProgress.remove');
-      return;
+  const removeCategory = async() => { 
+    try {
+      await confirm({
+        title: intl.formatMessage({ id: 'warning.category.remove.confirmationModal1' }),
+        description: intl.formatMessage({ id: 'warning.category.remove.confirmationModal2' }),
+        confirmationText: intl.formatMessage({ id: 'buttons.remove.category' }),
+        cancellationText: intl.formatMessage({ id: 'buttons.cancel' }),
+        confirmationButtonProps: {
+          color: 'error'
+        }
+      });
+
+      const isCategoryInProgress = tournamentStore.newTournamentCategories[props.tournamentCategoryId].state === CATEGORY_STATE.IN_PROGRESS;
+      if (isCategoryInProgress) {
+         systemStore.displaySnackbar(true, 'error.selectedCategory.inProgress.remove');
+        return;
+      } 
+      const isFirstItem = Object.keys(tournamentStore.newTournamentCategories)[0] === props.tournamentCategoryId;
+      props.setCurrentCategoryId(isFirstItem
+        ? (Object.keys(tournamentStore.newTournamentCategories)[1] || '')
+        : Object.keys(tournamentStore.newTournamentCategories)[0]);
+      // kind of crutch to prevent for access to undefined in  currentTournamentCategory.config  
+      tournamentStore.removeTournamentCategory(props.tournamentCategoryId)
+    } catch (error) {
+       console.log('cancel', error)
     }
-    const isFirstItem = Object.keys(tournamentStore.newTournamentCategories)[0] === props.tournamentCategoryId;
-    props.setCurrentCategoryId(isFirstItem ? (Object.keys(tournamentStore.newTournamentCategories)[1] || '') : Object.keys(tournamentStore.newTournamentCategories)[0]);
-    //kind of crutch to prevent for access to undefined in  currentTournamentCategory.config  
-    tournamentStore.removeTournamentCategory(props.tournamentCategoryId)
   }
 
   const onDeleteCompetitor = (competitorId) => {
@@ -255,6 +272,11 @@ const CategoryDetailsView = observer((props) => {
     } catch (error) {
       
     }
+  }
+
+  const checkInAthlete = (id) => { 
+    tournamentStore.editCompetitor({ id, participationStatus: ATHLETE_STATUS.CHECKED_IN });
+    systemStore.displaySnackbar(true, 'message.athlete.checkedIn', 'success')
   }
   
   return (
@@ -348,11 +370,13 @@ const CategoryDetailsView = observer((props) => {
                 position={index + 1}
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
-                weight={`${competitor.weight} ${weightUnitLabel}`}
+                weight={competitor.weight ? `${competitor.weight} ${weightUnitLabel}` : ''}
                 participationStatus={competitor.participationStatus}
                 categories={competitor.tournamentCategoryIds.map(
                   (tournamentId) => generateTournamentCategoryTitle(intl, tournamentStore.newTournamentCategories[tournamentId].config, 'full')
                 )}
+                checkInEnabled={competitor.participationStatus === ATHLETE_STATUS.REGISTERED}
+                checkInAction={() => checkInAthlete(competitor.id)}
                 onEdit={() => {
                   setEditModalVisble(true);
                   setSelectedCompetitor(competitor);
@@ -368,7 +392,7 @@ const CategoryDetailsView = observer((props) => {
             size='small'
             variant='outlined'
             onClick={() => {
-              setRemovalConfirmationModal(true);
+              removeCategory();
               analytics.logEvent('on_remove_category');
             }}
           >
@@ -386,12 +410,12 @@ const CategoryDetailsView = observer((props) => {
         competitor={selectedCompetitor}
         modalVisible={editModalVisble}
       /> 
-      <AlertDialogSlide
+      {/* <AlertDialogSlide
         state={removalConfirmationModal}
         onClose={() => setRemovalConfirmationModal(false)}
         onAgree={() => removeCategory()}
         
-      />
+      /> */}
     </>
   )
 })

@@ -136,7 +136,7 @@ export default observer(function TournamentCompetitors() {
     //   lastNameTmp = FAKE_competitorsList[index].lastName;
     //   index++;
     // }
-    if (!firstName || !lastName || !weight || !selectedCategoryIds.length) {
+    if (!firstName || !lastName || !selectedCategoryIds.length) {
       showValidationErrors(true);
       return;
     }
@@ -184,6 +184,7 @@ export default observer(function TournamentCompetitors() {
           <Grid container spacing={1} sx={{ alignItems: 'top' }}>
             <Grid item  xs={1.5}>
               <TextField
+                required
                 fullWidth
                 size='small'
                 onChange={(event) => {
@@ -202,6 +203,7 @@ export default observer(function TournamentCompetitors() {
             </Grid>
             <Grid item xs={1.5}>
               <TextField
+                required
                 fullWidth
                 size='small'
                 onChange={(event) => {
@@ -217,7 +219,7 @@ export default observer(function TournamentCompetitors() {
               />
             </Grid>
             <Grid item xs={4.5}>
-              <FormControl size="small" fullWidth margin='normal'>
+              <FormControl required size="small" fullWidth margin='normal'>
                 <InputLabel id="demo-simple-select-label">
                   {intl.formatMessage({ id: 'common.categories'})}
                 </InputLabel>
@@ -264,8 +266,8 @@ export default observer(function TournamentCompetitors() {
                 label={`${intl.formatMessage({ id: 'common.weight' })} (${weightUnitLabel})`}
                 variant="outlined"
                 value={weight}
-                helperText={validationErrors && intl.formatMessage({ id: 'validation.commong.required'})}
-                error={validationErrors && !weight}
+               // helperText={validationErrors && intl.formatMessage({ id: 'validation.commong.required'})}
+                // error={validationErrors && !weight}
               />
             </Grid>
             <Grid
@@ -303,7 +305,7 @@ export default observer(function TournamentCompetitors() {
                 sx={{ height: '40px', mt: 2 }}
                 //size='small'
                 fullWidth
-                variant='outlined'
+                variant='contained'
                 onClick={addCompetitor}  
               >
                 {intl.formatMessage({ id: 'buttons.add.participant' })}
@@ -326,6 +328,7 @@ export default observer(function TournamentCompetitors() {
                 }}
                 id="outlined-basic"
                 label={intl.formatMessage({ id: 'search.by.participants' })}
+                placeholder={intl.formatMessage({ id: 'placeholder.athletes.search' })}
                 variant="outlined"
                 value={searchQuery}
               />
@@ -363,7 +366,7 @@ export default observer(function TournamentCompetitors() {
                 firstName={competitor.firstName}
                 lastName={competitor.lastName}
                 participationStatus={competitor.participationStatus}
-                weight={`${competitor.weight} ${tournamentStore.weightUnit.value}`} 
+                weight={competitor.weight ? `${competitor.weight} ${tournamentStore.weightUnit.value}` : ''} 
                 source={competitor.source?.type}
                 checkInEnabled={competitor.participationStatus === ATHLETE_STATUS.REGISTERED}
                 checkInAction={() => checkInAthlete(competitor.id)}
